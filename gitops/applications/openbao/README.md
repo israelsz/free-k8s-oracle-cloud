@@ -7,10 +7,11 @@ HA service.
 ## Storage and cost boundary
 
 The StatefulSet requests one `50Gi` claim from the dedicated `oci-bv-retain`
-StorageClass. It uses OKE's CSI Block Volume driver but changes the reclaim
-policy from `Delete` to `Retain` and disables expansion. With two 50 GB worker
-boot volumes, the tenancy provisions 150 GB in total and keeps 50 GB of the
-Always Free 200 GB block-storage allowance unused.
+StorageClass. It uses OKE's CSI Block Volume driver with a paravirtualized
+attachment because the worker pool encrypts volume traffic in transit. The
+class also changes the reclaim policy from `Delete` to `Retain` and disables
+expansion. With two 50 GB worker boot volumes, the tenancy provisions 150 GB in
+total and keeps 50 GB of the Always Free 200 GB block-storage allowance unused.
 
 The claim is retained if the StatefulSet is deleted or scaled, and deleting the
 claim leaves the underlying OCI Block Volume available for manual recovery. The
