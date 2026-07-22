@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-path-provisioner
+  namespace: argocd
+  annotations:
+    # Storage is a platform foundation and must exist before stateful workloads.
+    argocd.argoproj.io/sync-wave: "-40"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: local-path-storage
+  sources:
+    # The official v0.0.36 chart is read from its immutable Git commit.
+    - repoURL: https://github.com/rancher/local-path-provisioner.git
+      targetRevision: 5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0
+      path: deploy/chart/local-path-provisioner
+      helm:
+        releaseName: local-path-provisioner
+        valueFiles:
+          - $values/gitops/applications/local-path-provisioner/values.yaml
+
+    # This source gives the chart access to the reviewed values in this repo.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true

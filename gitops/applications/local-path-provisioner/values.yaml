@@ -1,0 +1,90 @@
+# One small controller is enough; provisioning work happens in short-lived
+# helper pods on the node selected for each PVC.
+replicaCount: 1
+
+image:
+  repository: docker.io/rancher/local-path-provisioner
+  tag: v0.0.36
+  pullPolicy: IfNotPresent
+
+# Do not use the chart's floating "latest" helper tag.
+helperImage:
+  repository: docker.io/library/busybox
+  tag: "1.37.0"
+
+fullnameOverride: local-path-provisioner
+
+storageClass:
+  create: true
+  provisionerName: cluster.local/local-boot
+  name: local-boot
+  # Workloads must request local storage explicitly. This prevents an
+  # unspecified PVC from silently becoming node-local storage.
+  defaultClass: false
+  # A local PersistentVolume carries node affinity and cannot move to the other
+  # worker. CloudNativePG provides availability by keeping another copy there.
+  defaultVolumeType: local
+  volumeBindingMode: WaitForFirstConsumer
+  # Deleting a PVC must not immediately delete its data directory. Recovery or
+  # final cleanup is an explicit operator action.
+  reclaimPolicy: Retain
+
+nodePathMap:
+  - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+    paths:
+      - /var/lib/local-boot
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsUser: 65534
+  runAsGroup: 65534
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+    ephemeral-storage: 16Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+    ephemeral-storage: 128Mi
+
+helperPod:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 8Mi
+      ephemeral-storage: 8Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+      ephemeral-storage: 64Mi
+
+priorityClassName: system-cluster-critical
+
+# The helper needs root on the node to create and remove volume directories.
+# The application pods using a PVC remain constrained by their own security
+# contexts and fsGroup settings.
+configmap:
+  setup: |-
+    #!/bin/sh
+    set -eu
+    mkdir -m 0770 -p "$VOL_DIR"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$VOL_DIR"
+
+# A PDB around one replica would prevent a normal node drain without adding
+# availability, so it is intentionally disabled.
+podDisruptionBudget:
+  enabled: false

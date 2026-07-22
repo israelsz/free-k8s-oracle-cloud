@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Calico v3.31.5, pinned to the immutable commit behind the official tag.
+resources:
+  - https://raw.githubusercontent.com/projectcalico/calico/2e4da40144aac869e1ed2cc220b6c4b62f32efdd/manifests/calico-policy-only.yaml
+
+patches:
+  - path: oci-vcn-native.patch.yaml
+
+  # calico-node talks directly to the Kubernetes API in this two-node cluster,
+  # so the unused Typha proxy would only consume memory and CPU.
+  - target:
+      group: ""
+      version: v1
+      kind: Service
+      name: calico-typha
+      namespace: kube-system
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: calico-typha
+        namespace: kube-system
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: calico-typha
+      namespace: kube-system
+    patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: calico-typha
+        namespace: kube-system

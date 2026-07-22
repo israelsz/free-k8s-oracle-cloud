@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: calico-node
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      # OCI already installs and owns the CNI binaries and configuration. The
+      # upstream init containers must not write a second CNI onto each node.
+      initContainers: null
+      containers:
+        - name: calico-node
+          # Do not override the API endpoint supplied by Kubernetes.
+          envFrom: null
+          env:
+            # The node agents use the Kubernetes API directly; Typha is not
+            # needed for a two-node cluster.
+            - name: FELIX_TYPHAK8SSERVICENAME
+              $patch: delete
+
+            # These values are required by Oracle for policy-only Calico beside
+            # the OCI VCN-native CNI on Oracle Linux 8.
+            - name: FELIX_INTERFACEPREFIX
+              value: "oci"
+            - name: NO_DEFAULT_POOLS
+              value: "true"
+            - name: FELIX_CHAININSERTMODE
+              value: "Append"
+            - name: FELIX_IPTABLESMANGLEALLOWACTION
+              value: "Return"
+            - name: FELIX_IPTABLESBACKEND
+              value: "NFT"
+          volumeMounts:
+            # Calico enforces policy only and must not manage OCI's CNI files.
+            - name: cni-net-dir
+              $patch: delete
+            - name: cni-log-dir
+              $patch: delete
+      volumes:
+        - name: cni-bin-dir
+          $patch: delete
+        - name: cni-net-dir
+          $patch: delete
+        - name: cni-log-dir
+          $patch: delete

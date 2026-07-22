@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: calico
+  namespace: argocd
+  annotations:
+    # Platform foundations run after Argo CD itself and before applications.
+    argocd.argoproj.io/sync-wave: "-40"
+spec:
+  project: default
+  source:
+    # The Kustomization in this repository applies Oracle's required changes to
+    # the immutable upstream Calico policy-only manifest.
+    repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+    targetRevision: main
+    path: gitops/applications/calico/manifest
+  destination:
+    server: https://kubernetes.default.svc
+    # Oracle's supported manifest installs Calico beside the OKE system pods.
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+    syncOptions:
+      # Calico includes large CRDs that are better handled by server-side apply.
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true

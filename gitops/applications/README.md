@@ -9,14 +9,12 @@ applications/
 │   ├── application.yaml
 │   ├── values.yaml
 │   └── manifest/
-├── cert-manager/
+├── calico/
 │   ├── application.yaml
-│   ├── values.yaml
 │   └── manifest/
-└── portfolio/
+└── local-path-provisioner/
     ├── application.yaml
-    ├── values.yaml
-    └── manifest/
+    └── values.yaml
 ```
 
 Folder contents:
