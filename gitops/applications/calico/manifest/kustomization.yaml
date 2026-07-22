@@ -8,6 +8,17 @@ resources:
 patches:
   - path: oci-vcn-native.patch.yaml
 
+  # Kubernetes stores this default explicitly on CRDs. Declaring it here keeps
+  # Argo CD from seeing a permanent omitted-versus-false difference.
+  - target:
+      group: apiextensions.k8s.io
+      version: v1
+      kind: CustomResourceDefinition
+    patch: |-
+      - op: add
+        path: /spec/preserveUnknownFields
+        value: false
+
   # calico-node talks directly to the Kubernetes API in this two-node cluster,
   # so the unused Typha proxy would only consume memory and CPU.
   - target:
@@ -34,6 +45,20 @@ patches:
       $patch: delete
       apiVersion: apps/v1
       kind: Deployment
+      metadata:
+        name: calico-typha
+        namespace: kube-system
+
+  - target:
+      group: policy
+      version: v1
+      kind: PodDisruptionBudget
+      name: calico-typha
+      namespace: kube-system
+    patch: |-
+      $patch: delete
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
       metadata:
         name: calico-typha
         namespace: kube-system
