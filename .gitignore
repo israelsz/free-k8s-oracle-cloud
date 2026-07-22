@@ -1,0 +1,45 @@
+# Terraform working data and local state
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variable values may contain tenancy-specific or sensitive data
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
+
+# Local credentials and generated access files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig
+kubeconfig.*
+bootstrap/generated/
+secrets/
+.tools/
+.local/
+
+# Local operator automation is intentionally not published
+Makefile
+scripts/
+
+# Partial backend configuration is environment-specific and may be sensitive
+backend.hcl
+*.backend.hcl
+!*.backend.hcl.example
+
+# Editor and operating-system files
+.DS_Store
+*.swp
+*.swo
+*~

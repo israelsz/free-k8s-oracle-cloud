@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: replace-me
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: replace-me
+  sources:
+    - repoURL: https://example.invalid/helm
+      chart: replace-me
+      targetRevision: 0.0.0
+      helm:
+        valueFiles:
+          - $values/gitops/applications/replace-me/values.yaml
+    - repoURL: REPLACE_WITH_GIT_REPOSITORY_URL
+      targetRevision: main
+      ref: values
+    - repoURL: REPLACE_WITH_GIT_REPOSITORY_URL
+      targetRevision: main
+      path: gitops/applications/replace-me/manifest
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true

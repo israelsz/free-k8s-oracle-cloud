@@ -1,0 +1,8 @@
+# Copy to backend.hcl and replace the placeholders
+
+bucket              = "replace-with-state-bucket"
+namespace           = "replace-with-object-storage-namespace"
+key                 = "replace-with-terraform.tfstate"
+region              = "sa-santiago-1"
+auth                = "SecurityToken"
+config_file_profile = "file-profile-name"

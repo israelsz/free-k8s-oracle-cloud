@@ -1,0 +1,28 @@
+# Copy to terraform.tfvars and replace the values locally
+
+tenancy_ocid = "ocid1.tenancy.oc1..redacted"
+region       = "xx-redacted-1"
+
+base_domain        = "example.com"
+cluster_name       = "example-prod"
+oci_config_profile = "EXAMPLE"
+oci_auth           = "SecurityToken"
+operator_user_ocid = "ocid1.user.oc1..redacted"
+
+availability_domain = "xxxx:XX-REDACTED-1-AD-1"
+
+kubernetes_version = "v1.35.2"
+node_image_name     = "replace-with-reviewed-aarch64-oke-image"
+max_pods_per_node   = 31
+
+bastion_client_cidrs = ["192.0.2.10/32"]
+
+worker_count         = 2
+worker_ocpus         = 2
+worker_memory_gbs    = 12
+worker_boot_size_gbs = 50
+
+openbao_volume_size_gbs = 50
+
+object_storage_soft_limit_gbs = 8
+monthly_budget_amount         = 1

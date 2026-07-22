@@ -1,0 +1,23 @@
+# Values shared by the initial Helm-rendered bootstrap and Argo CD's later
+# self-management. Resource tuning is added after the chart version is pinned
+# and rendered against the target OKE version.
+
+server:
+  replicas: 1
+  service:
+    type: ClusterIP
+
+controller:
+  replicas: 1
+
+repoServer:
+  replicas: 1
+
+applicationSet:
+  replicas: 1
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
