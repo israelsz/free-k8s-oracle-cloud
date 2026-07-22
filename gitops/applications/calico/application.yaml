@@ -6,6 +6,11 @@ metadata:
   annotations:
     # Platform foundations run after Argo CD itself and before applications.
     argocd.argoproj.io/sync-wave: "-40"
+
+    # Ask Kubernetes to calculate the predicted live state during comparisons.
+    # This avoids false CRD drift caused by API-defaulted fields while still
+    # reporting real differences.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:
