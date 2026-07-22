@@ -84,8 +84,8 @@ server:
     timeoutSeconds: 3
 
   livenessProbe:
+    # Being sealed or uninitialized is an operator state, not a restart reason.
     enabled: true
-    # Being sealed is an operator state, not a reason for a restart loop.
     path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
     port: 8200
     failureThreshold: 6
@@ -131,6 +131,14 @@ server:
               cidr: 0.0.0.0/0
         ports:
           - port: 443
+            protocol: TCP
+      # The kubernetes.default Service is translated to the private OKE API
+      # endpoint before Calico evaluates this egress traffic.
+      - to:
+          - ipBlock:
+              cidr: 10.20.0.0/28
+        ports:
+          - port: 6443
             protocol: TCP
       - to:
           - ipBlock:
@@ -181,12 +189,12 @@ server:
       setNodeId: true
       config: |-
         ui = false
-        disable_mlock = true
 
         listener "tcp" {
           tls_disable = 1
-          address = "[::]:8200"
-          cluster_address = "[::]:8201"
+          # The OKE VCN-native pod network is IPv4-only.
+          address = "0.0.0.0:8200"
+          cluster_address = "0.0.0.0:8201"
         }
 
         storage "raft" {

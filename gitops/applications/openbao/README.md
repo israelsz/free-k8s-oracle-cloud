@@ -58,6 +58,8 @@ non-system namespaces. Only pods carrying the OpenBao server labels and running
 as the `openbao` service account receive the exception required for KMS
 auto-unseal. The guardrail lives in Calico's higher-priority `platform` tier;
 all non-metadata traffic passes onward to normal Kubernetes NetworkPolicies.
+The namespace policy also allows the private OKE API subnet on TCP 6443 so
+OpenBao's Kubernetes service registration can update its active-pod label.
 
 Internal server TLS, Kubernetes auth roles, audit shipping, Raft snapshots, and
 secret-delivery controllers are configured after the initialization checkpoint.
