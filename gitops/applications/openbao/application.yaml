@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openbao
+  namespace: argocd
+  annotations:
+    # Secrets infrastructure starts after networking and storage foundations.
+    argocd.argoproj.io/sync-wave: "-20"
+    # Ask Kubernetes to normalize generated resources before Argo compares them.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openbao
+  sources:
+    # Official chart pinned to the release that contains OpenBao 2.6.0.
+    - repoURL: https://openbao.github.io/openbao-helm
+      chart: openbao
+      targetRevision: 0.28.5
+      helm:
+        releaseName: openbao
+        valueFiles:
+          - $values/gitops/applications/openbao/values.yaml
+
+    # This source gives the chart access to the reviewed values in this repo.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+    # Policies and quota belong to the same Argo application as OpenBao.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/openbao/manifest
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: v1.35
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: v1.35
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: v1.35
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true

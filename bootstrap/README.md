@@ -33,3 +33,8 @@ Apps. The initial server remains a `ClusterIP`.
 
 OpenBao initialization remains an explicit interactive checkpoint. OCI KMS can
 auto-unseal an initialized OpenBao instance, but cannot initialize it.
+
+Before pushing/enabling the OpenBao Application, run
+`bootstrap/openbao-prerequisites.sh` with the OKE tunnel open. It copies the
+non-secret KMS identifiers from Terraform state into a Kubernetes Secret without
+printing them. It does not initialize OpenBao or handle recovery material.

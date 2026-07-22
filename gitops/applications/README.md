@@ -12,9 +12,13 @@ applications/
 ├── calico/
 │   ├── application.yaml
 │   └── manifest/
-└── local-path-provisioner/
+├── local-path-provisioner/
+│   ├── application.yaml
+│   └── values.yaml
+└── openbao/
     ├── application.yaml
-    └── values.yaml
+    ├── values.yaml
+    └── manifest/
 ```
 
 Folder contents:

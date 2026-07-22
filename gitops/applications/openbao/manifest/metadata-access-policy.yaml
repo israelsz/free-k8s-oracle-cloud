@@ -1,0 +1,49 @@
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: platform.allow-openbao-oci-instance-metadata
+  annotations:
+    # Enforce the metadata boundary before the OpenBao pod starts.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  tier: platform
+  order: 40
+  namespaceSelector: projectcalico.org/name == "openbao"
+  serviceAccountSelector: projectcalico.org/name == "openbao"
+  selector: app.kubernetes.io/name == "openbao" && component == "server"
+  types:
+    - Egress
+  egress:
+    - action: Allow
+      protocol: TCP
+      destination:
+        nets:
+          - 169.254.169.254/32
+        ports:
+          - 80
+---
+apiVersion: crd.projectcalico.org/v1
+kind: GlobalNetworkPolicy
+metadata:
+  name: platform.deny-oci-instance-metadata
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  tier: platform
+  order: 50
+  # OKE and Calico components can require node identity, so their control-plane
+  # namespaces are excluded. The earlier policy grants OpenBao's exact server
+  # identity its narrow exception before this deny rule is evaluated.
+  namespaceSelector: >-
+    projectcalico.org/name not in {"kube-system", "kube-public",
+    "kube-node-lease", "calico-system", "tigera-operator"}
+  selector: all()
+  types:
+    - Egress
+  egress:
+    - action: Deny
+      destination:
+        nets:
+          - 169.254.0.0/16
+    # Continue with the default tier for DNS, HTTPS, and namespace policies.
+    - action: Pass

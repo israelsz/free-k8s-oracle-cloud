@@ -1,0 +1,13 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: oci-bv-retain
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-options: Prune=confirm
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: blockvolume.csi.oraclecloud.com
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+# An expansion could push the tenancy beyond its zero-cost disk budget.
+allowVolumeExpansion: false

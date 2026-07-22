@@ -1,0 +1,11 @@
+apiVersion: crd.projectcalico.org/v1
+kind: Tier
+metadata:
+  name: platform
+  annotations:
+    # The tier must exist before policies can refer to it.
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  # Lower numbers run before Calico's default tier, where Kubernetes
+  # NetworkPolicies are evaluated.
+  order: 100
