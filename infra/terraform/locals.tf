@@ -23,7 +23,7 @@ locals {
   kubernetes_services_cidr = "10.96.0.0/16"
 
   backup_bucket_name               = "israheck-prod-workload-backups"
-  object_storage_service_principal = "objectstorage-scl"
+  object_storage_service_principal = "objectstorage-${var.region}"
 
   planned_capacity = {
     workers              = var.worker_count

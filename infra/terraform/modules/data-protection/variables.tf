@@ -43,8 +43,8 @@ variable "object_storage_service_principal" {
   type        = string
 
   validation {
-    condition     = can(regex("^objectstorage-[a-z]{3}$", var.object_storage_service_principal))
-    error_message = "object_storage_service_principal must look like objectstorage-scl."
+    condition     = can(regex("^objectstorage-[a-z]{2}-[a-z0-9-]+-[0-9]+$", var.object_storage_service_principal))
+    error_message = "object_storage_service_principal must use an OCI region identifier, such as objectstorage-sa-santiago-1."
   }
 }
 

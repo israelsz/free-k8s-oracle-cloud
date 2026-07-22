@@ -1,5 +1,5 @@
 resource "oci_bastion_bastion" "oke_api" {
-  bastion_type                 = "standard"
+  bastion_type                 = "STANDARD"
   compartment_id               = var.compartment_id
   target_subnet_id             = var.target_subnet_id
   client_cidr_block_allow_list = var.client_cidr_block_allow_list
