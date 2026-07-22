@@ -207,6 +207,18 @@ server:
 
         service_registration "kubernetes" {}
 
+        # OpenBao 2.6 manages audit devices from server configuration. The
+        # default redaction/HMAC behavior stays enabled, so secret values and
+        # tokens are not written in plaintext. Kubernetes log rotation bounds
+        # local usage; VictoriaLogs will collect these records later.
+        audit "file" "stdout" {
+          description = "Security audit events collected from pod logs"
+
+          options {
+            file_path = "stdout"
+          }
+        }
+
         telemetry {
           prometheus_retention_time = "30s"
           disable_hostname = true

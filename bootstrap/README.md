@@ -38,3 +38,15 @@ Before pushing/enabling the OpenBao Application, run
 `bootstrap/openbao-prerequisites.sh` with the OKE tunnel open. It copies the
 non-secret KMS identifiers from Terraform state into a Kubernetes Secret without
 printing them. It does not initialize OpenBao or handle recovery material.
+
+After initialization and a successful auto-unseal restart test, run
+`bootstrap/openbao-configure.sh`. It asks for the initial root token and a new
+administrator password without echoing either value. They travel directly to
+the OpenBao pod over standard input and are not stored in Git, a local file, or
+a Kubernetes Secret.
+
+The helper creates an expiring `platform-admin` login, enables Kubernetes
+authentication with OpenBao's rotating service-account token, and enables a
+versioned `secret/` KV store. It verifies the administrator login but does not
+revoke the initial root token; revoke that token only after testing a separate
+administrator login yourself.

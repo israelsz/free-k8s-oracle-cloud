@@ -49,6 +49,23 @@ After initialization, deleting only the pod is a useful first recovery test. The
 same PVC is reattached and the replacement pod should become ready without any
 manual unseal command.
 
+## Post-initialization setup
+
+OpenBao is an empty safe immediately after initialization. With the tunnel open,
+run `bootstrap/openbao-configure.sh` to add the first normal administrator,
+configure Kubernetes service-account authentication, and enable a versioned
+`secret/` KV store. The helper reads credentials interactively and never writes
+them to Git or a Kubernetes Secret.
+
+Audit events are declared in the server configuration and written to the pod's
+standard output with OpenBao's normal HMAC protection. Kubernetes bounds the
+local container-log size; VictoriaLogs will become the durable destination when
+the observability stack is added.
+
+No general Kubernetes role is created. Each application will get its own role
+later, bound to one service account and namespace and granting access only to
+that application's secret path.
+
 ## Network boundary
 
 OpenBao has only ClusterIP services and no Ingress, Gateway route, or UI Service.
@@ -61,5 +78,6 @@ all non-metadata traffic passes onward to normal Kubernetes NetworkPolicies.
 The namespace policy also allows the private OKE API subnet on TCP 6443 so
 OpenBao's Kubernetes service registration can update its active-pod label.
 
-Internal server TLS, Kubernetes auth roles, audit shipping, Raft snapshots, and
-secret-delivery controllers are configured after the initialization checkpoint.
+Internal server TLS, per-application Kubernetes auth roles, durable audit
+shipping, Raft snapshots, and secret-delivery controllers follow after this
+bootstrap checkpoint.
