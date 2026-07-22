@@ -1,7 +1,7 @@
 # Argo CD Applications
 
-This directory is the self-contained application catalog watched by the catalog
-Argo CD Application. Every deployed component gets one folder:
+This directory contains the self-contained applications watched by the
+`app-bootstrap` App of Apps. Every deployed component gets one folder:
 
 ```text
 applications/
@@ -33,9 +33,9 @@ Argo CD multiple sources: the chart repository, this Git repository as the
 values source, and the local `manifest/` path. For a manifest-only workload,
 the Application points directly at its `manifest/` directory.
 
-The catalog Application uses directory recursion with the include pattern
+The App of Apps uses directory recursion with the include pattern
 `*/application.yaml`. It therefore creates the child Applications without
-mistaking `values.yaml` or the child manifests for catalog-level resources.
+mistaking `values.yaml` or the child manifests for top-level resources.
 
 Dependency order is enforced by explicit Argo CD sync-wave annotations on each
 `application.yaml`, not by directory names.

@@ -1,23 +1,120 @@
-# Values shared by the initial Helm-rendered bootstrap and Argo CD's later
-# self-management. Resource tuning is added after the chart version is pinned
-# and rendered against the target OKE version.
+# Shared by the initial bootstrap and Argo CD's later self-management.
+
+global:
+  image:
+    tag: v3.4.5
+  revisionHistoryLimit: 2
+  logging:
+    format: json
+    level: info
+
+configs:
+  cm:
+    admin.enabled: true
+    exec.enabled: false
 
 server:
   replicas: 1
   service:
     type: ClusterIP
+  emptyDir:
+    sizeLimit: 256Mi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+      ephemeral-storage: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+      ephemeral-storage: 512Mi
 
 controller:
   replicas: 1
+  emptyDir:
+    sizeLimit: 512Mi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+      ephemeral-storage: 128Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+      ephemeral-storage: 1Gi
 
 repoServer:
   replicas: 1
+  emptyDir:
+    sizeLimit: 2Gi
+  copyutil:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+        ephemeral-storage: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+        ephemeral-storage: 64Mi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+      ephemeral-storage: 256Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+      ephemeral-storage: 2Gi
 
 applicationSet:
-  replicas: 1
+  replicas: 0
+  emptyDir:
+    sizeLimit: 256Mi
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+      ephemeral-storage: 256Mi
 
 dex:
   enabled: false
 
 notifications:
+  enabled: false
+
+redis:
+  enabled: true
+  exporter:
+    enabled: false
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 250m
+      memory: 192Mi
+      ephemeral-storage: 256Mi
+
+redis-ha:
+  enabled: false
+
+redisSecretInit:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+      ephemeral-storage: 16Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+      ephemeral-storage: 64Mi
+
+commitServer:
   enabled: false

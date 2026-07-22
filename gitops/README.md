@@ -1,12 +1,12 @@
 # GitOps desired state
 
 Argo CD reconciles this tree into the production OKE cluster. The only Argo CD
-object applied directly by bootstrap is the application catalog under
+object applied directly by the bootstrap script is the App of Apps under
 `bootstrap/`.
 
 ## Layout
 
-- `bootstrap/`: application catalog template that discovers child Applications.
+- `bootstrap/`: App of Apps that discovers child Applications.
 - `applications/<name>/`: one self-contained Argo CD application with its
   `application.yaml`, Helm `values.yaml`, and optional `manifest/` directory.
 

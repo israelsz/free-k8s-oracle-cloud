@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Argo CD manages its own Helm chart after the first bootstrap installation.
+  name: argocd
+  namespace: argocd
+  annotations:
+    # Install the deployment controller before later platform applications.
+    # More negative sync waves run earlier.
+    argocd.argoproj.io/sync-wave: "-50"
+spec:
+  # The default project permits this repository and the in-cluster destination.
+  project: default
+
+  # Deploy the chart back into the same cluster where Argo CD is running.
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  # Multiple sources let an upstream Helm chart use values stored in this Git
+  # repository without copying the chart into the repository.
+  sources:
+    # Source 1: the official, version-pinned Argo CD Helm chart.
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      # For Helm sources, targetRevision is the chart version, not a Git branch.
+      targetRevision: "10.1.4"
+      helm:
+        # Keep the generated Kubernetes resource names stable across bootstrap
+        # and later Argo CD reconciliations.
+        releaseName: argocd
+        valueFiles:
+          # $values refers to the Git source carrying ref: values below.
+          - $values/gitops/applications/argocd/values.yaml
+
+    # Source 2: this repository supplies the values file used by the chart.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      # This alias makes the repository available through the $values prefix.
+      ref: values
+
+  syncPolicy:
+    automated:
+      # Apply reviewed changes from main automatically.
+      enabled: true
+      # Deliberately disabled for self-management: removing a chart resource
+      # from Git must not automatically dismantle part of Argo CD itself.
+      prune: false
+      # Undo manual changes to resources that still exist in the desired chart.
+      selfHeal: true
+      # Do not accept an unexpectedly empty Helm render as a valid deployment.
+      allowEmpty: false
+    retry:
+      # Retry transient chart repository, Git, or Kubernetes API failures.
+      limit: 5
+    syncOptions:
+      # Create the target namespace if it is absent during disaster recovery.
+      - CreateNamespace=true
+      # This is important for the ownership hand-off from the bootstrap script
+      # to Argo CD and avoids client-side apply annotation limits.
+      - ServerSideApply=true
+      # Avoid rewriting resources that Argo CD already considers synchronized.
+      - ApplyOutOfSyncOnly=true

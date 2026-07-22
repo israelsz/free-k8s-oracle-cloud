@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # This is the App of Apps: its children are the Application manifests found
+  # under gitops/applications, including Argo CD's own Application.
+  name: app-bootstrap
+  # Application objects live beside the Argo CD controllers by default.
+  namespace: argocd
+spec:
+  # Projects restrict which repositories and clusters an Application may use.
+  # The built-in project is enough while this repository has one cluster.
+  project: default
+
+  # Argo CD reads the child Application manifests from this public repository.
+  source:
+    repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+    # Following main means a merged commit becomes the desired cluster state.
+    targetRevision: main
+    path: gitops/applications
+    directory:
+      # Search each named application folder below the path above.
+      recurse: true
+      # Only load Application definitions. This prevents values.yaml and files
+      # under manifest/ from being interpreted as children of this app.
+      include: '*/application.yaml'
+
+  # The Kubernetes API address below means "the cluster running Argo CD."
+  destination:
+    server: https://kubernetes.default.svc
+    # Child Application manifests already declare this namespace, but setting a
+    # destination namespace also provides the default for namespaced resources.
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      # Reconcile Git changes without requiring a manual Sync click.
+      enabled: true
+      # Remove child Application objects that are removed from this directory.
+      prune: true
+      # Restore a managed object if somebody changes it directly in the cluster.
+      selfHeal: true
+      # Refuse an automated sync if the source unexpectedly produces no objects.
+      allowEmpty: false
+    retry:
+      # Retry temporary failures such as a short repository or API outage.
+      limit: 5
+    syncOptions:
+      # Apply new and changed resources before deleting obsolete ones.
+      - PruneLast=true
+      # Let Kubernetes track field ownership instead of using a large
+      # client-side last-applied annotation.
+      - ServerSideApply=true
