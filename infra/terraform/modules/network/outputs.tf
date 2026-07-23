@@ -16,10 +16,9 @@ output "subnet_ids" {
 output "network_security_group_ids" {
   description = "Role-specific NSG OCIDs attached by the OKE and GitOps layers."
   value = {
-    api           = oci_core_network_security_group.api.id
-    workers       = oci_core_network_security_group.workers.id
-    pods          = oci_core_network_security_group.pods.id
-    load_balancer = oci_core_network_security_group.load_balancer.id
+    api     = oci_core_network_security_group.api.id
+    workers = oci_core_network_security_group.workers.id
+    pods    = oci_core_network_security_group.pods.id
   }
 }
 

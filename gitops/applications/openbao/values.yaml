@@ -202,7 +202,7 @@ server:
       enabled: true
       setNodeId: true
       config: |-
-        ui = false
+        ui = true
 
         listener "tcp" {
           tls_disable = 0
@@ -274,7 +274,13 @@ server:
   configAnnotation: true
 
 ui:
-  enabled: false
+  # Envoy Gateway will use this internal Service as the UI/API backend.
+  # The Service itself never creates an OCI load balancer.
+  enabled: true
+  activeOpenbaoPodOnly: true
+  serviceType: ClusterIP
+  externalPort: 8200
+  targetPort: 8200
 
 csi:
   enabled: false

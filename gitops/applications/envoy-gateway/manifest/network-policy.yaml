@@ -1,0 +1,151 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: envoy-gateway-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controller
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      control-plane: envoy-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # The private OKE API server calls the topology injection webhook.
+    - from:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 9443
+          protocol: TCP
+    # Managed Envoy pods obtain xDS configuration from the controller.
+    - from:
+        - podSelector:
+            matchLabels:
+              platform.israheck.com/edge-proxy: public
+      ports:
+        - port: 18000
+          protocol: TCP
+        - port: 18001
+          protocol: TCP
+        - port: 18002
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Watch Gateway API resources and manage the generated proxy Deployment.
+    - to:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 6443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: certgen
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      app: certgen
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 6443
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: public-proxy-control-plane
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      platform.israheck.com/edge-proxy: public
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    - to:
+        - podSelector:
+            matchLabels:
+              control-plane: envoy-gateway
+      ports:
+        - port: 18000
+          protocol: TCP
+        - port: 18001
+          protocol: TCP
+        - port: 18002
+          protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: public-proxy-load-balancer
+  namespace: envoy-gateway-system
+spec:
+  podSelector:
+    matchLabels:
+      platform.israheck.com/edge-proxy: public
+  policyTypes:
+    - Ingress
+  ingress:
+    # Envoy shifts the privileged 443 listener to container port 10443.
+    - from:
+        - ipBlock:
+            cidr: 10.20.3.0/24
+      ports:
+        - port: 10443
+          protocol: TCP
+

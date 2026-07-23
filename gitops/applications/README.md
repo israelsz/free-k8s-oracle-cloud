@@ -23,16 +23,26 @@ applications/
 │   ├── application.yaml
 │   ├── values.yaml
 │   └── manifest/
+├── envoy-gateway/
+│   ├── application.yaml
+│   ├── values.yaml
+│   └── manifest/
 ├── external-dns/
 │   ├── application.yaml
 │   ├── values.yaml
 │   └── manifest/
+├── gateway-api/
+│   ├── application.yaml
+│   └── values.yaml
 ├── local-path-provisioner/
 │   ├── application.yaml
 │   └── values.yaml
 ├── openbao/
 │   ├── application.yaml
 │   ├── values.yaml
+│   └── manifest/
+├── public-edge/
+│   ├── application.yaml
 │   └── manifest/
 └── trust-manager/
     ├── application.yaml

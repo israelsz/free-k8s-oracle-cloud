@@ -1,0 +1,40 @@
+# CRDs are owned by the gateway-api Application so their lifecycle is explicit.
+crds:
+  enabled: false
+
+deployment:
+  replicas: 1
+  envoyGateway:
+    resources:
+      requests:
+        cpu: 75m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 384Mi
+
+# One controller replica is enough for this two-node cluster. The data plane has
+# two replicas and its own PDB in the public-edge application.
+podDisruptionBudget:
+  minAvailable: 0
+
+service:
+  type: ClusterIP
+
+hpa:
+  enabled: false
+
+certgen:
+  job:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+# This injects node topology into Envoy pods and does not add another Deployment.
+topologyInjector:
+  enabled: true
+

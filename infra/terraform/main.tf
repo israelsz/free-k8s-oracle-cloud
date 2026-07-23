@@ -12,10 +12,6 @@ resource "oci_identity_compartment" "project" {
   }
 }
 
-# This endpoint is public metadata published by Cloudflare and requires no API
-# token. Restricting the origin NSG prevents clients from bypassing Cloudflare.
-data "cloudflare_ip_ranges" "proxy" {}
-
 data "oci_identity_user" "operator" {
   user_id = var.operator_user_ocid
 }
@@ -31,7 +27,6 @@ module "network" {
   worker_subnet_cidr        = local.network_cidrs.workers
   pod_subnet_cidr           = local.network_cidrs.pods
   load_balancer_subnet_cidr = local.network_cidrs.load_balancer
-  public_ingress_cidrs      = toset(data.cloudflare_ip_ranges.proxy.ipv4_cidrs)
   freeform_tags             = local.common_tags
 }
 
@@ -72,6 +67,24 @@ module "oke" {
   max_pods_per_node    = var.max_pods_per_node
   services_cidr        = local.kubernetes_services_cidr
   freeform_tags        = local.common_tags
+}
+
+# The OCI cloud controller creates one frontend NSG for the Envoy Gateway
+# Service. Its ingress sources come from the Service's
+# loadBalancerSourceRanges, while the worker NSG above is the cluster's default
+# backend NSG. Restrict these grants to this exact cluster and compartment.
+# Creating or deleting an NSG also needs attach/detach access to the VCN, but
+# not permission to modify or delete the VCN itself.
+resource "oci_identity_policy" "oke_load_balancer_networking" {
+  compartment_id = var.tenancy_ocid
+  name           = "${var.cluster_name}-load-balancer-networking"
+  description    = "Let the OKE cluster create and maintain service load balancer NSGs"
+  freeform_tags  = local.common_tags
+
+  statements = [
+    "Allow any-user to manage network-security-groups in compartment id ${oci_identity_compartment.project.id} where ALL {request.principal.type='cluster', request.principal.id='${module.oke.cluster_id}'}",
+    "Allow any-user to manage vcns in compartment id ${oci_identity_compartment.project.id} where ALL {request.principal.type='cluster', request.principal.id='${module.oke.cluster_id}', ANY {request.permission='VCN_READ', request.permission='VCN_ATTACH', request.permission='VCN_DETACH'}}",
+  ]
 }
 
 module "access" {

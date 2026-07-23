@@ -131,8 +131,12 @@ Conventions and boundaries:
 
 ## Network boundary
 
-OpenBao has only ClusterIP services and no Ingress, Gateway route, or UI Service.
-Its namespace policy permits client traffic only from namespaces labeled
+OpenBao has only ClusterIP services. Its UI Service selects only the active
+OpenBao pod and never creates its own cloud load balancer. A reviewed Gateway
+route can use it as a backend after external TLS and OIDC authentication are
+configured.
+
+The namespace policy permits client traffic only from namespaces labeled
 `openbao-client=true`. A Calico global policy blocks OCI link-local metadata for
 non-system namespaces. Only pods carrying the OpenBao server labels and running
 as the `openbao` service account receive the exception required for KMS
@@ -140,6 +144,11 @@ auto-unseal. The guardrail lives in Calico's higher-priority `platform` tier;
 all non-metadata traffic passes onward to normal Kubernetes NetworkPolicies.
 The namespace policy also allows the private OKE API subnet on TCP 6443 so
 OpenBao's Kubernetes service registration can update its active-pod label.
+
+The public administrative route must not be enabled until OpenBao's OIDC method
+has a narrow administrator role and the matching identity-provider callback is
+registered. Internal applications continue using the private Service and
+Kubernetes authentication rather than the public route.
 
 Per-application Kubernetes auth roles, durable audit shipping, and Raft
 snapshots follow after this checkpoint.

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: envoy-gateway-objects
+  namespace: envoy-gateway-system
+spec:
+  hard:
+    pods: "8"
+    count/deployments.apps: "3"
+    count/jobs.batch: "4"
+    count/poddisruptionbudgets.policy: "2"
+    count/secrets: "12"
+    count/configmaps: "12"
+    count/services: "5"
+    services.loadbalancers: "1"
+    services.nodeports: "1"
+

@@ -1,0 +1,10 @@
+crds:
+  gatewayAPI:
+    enabled: true
+    # The standard channel contains the stable HTTP routing APIs we use.
+    # Experimental TCP/UDP and other provisional APIs stay out of the cluster.
+    channel: standard
+  envoyGateway:
+    # EnvoyProxy and Envoy's policy APIs must match the controller version.
+    enabled: true
+

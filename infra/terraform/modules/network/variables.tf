@@ -68,16 +68,6 @@ variable "load_balancer_subnet_cidr" {
   }
 }
 
-variable "public_ingress_cidrs" {
-  description = "IPv4 CIDRs allowed to reach the origin load balancer on TCP/443."
-  type        = set(string)
-
-  validation {
-    condition     = length(var.public_ingress_cidrs) > 0 && alltrue([for cidr in var.public_ingress_cidrs : can(cidrnetmask(cidr))])
-    error_message = "public_ingress_cidrs must contain at least one valid IPv4 CIDR."
-  }
-}
-
 variable "freeform_tags" {
   description = "Common non-sensitive tags applied to every network resource."
   type        = map(string)

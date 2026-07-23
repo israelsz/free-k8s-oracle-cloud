@@ -1,0 +1,48 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api
+  namespace: argocd
+  annotations:
+    # Install the APIs before the Envoy controller tries to watch them.
+    argocd.argoproj.io/sync-wave: "-35"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    # The chart contains cluster-scoped CRDs only. Use an existing namespace so
+    # this Application does not create the Envoy namespace ahead of its owner.
+    namespace: argocd
+  sources:
+    # Keeping CRDs in their own chart lets Argo CD upgrade their schemas instead
+    # of relying on Helm's install-only CRD directory behavior.
+    - repoURL: docker.io/envoyproxy
+      chart: gateway-crds-helm
+      targetRevision: v1.8.3
+      helm:
+        releaseName: gateway-api-crds
+        valueFiles:
+          - $values/gitops/applications/gateway-api/values.yaml
+
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+    syncOptions:
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+

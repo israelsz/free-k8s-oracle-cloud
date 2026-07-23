@@ -19,13 +19,6 @@ resource "oci_core_network_security_group" "pods" {
   freeform_tags  = var.freeform_tags
 }
 
-resource "oci_core_network_security_group" "load_balancer" {
-  compartment_id = var.compartment_id
-  vcn_id         = oci_core_vcn.this.id
-  display_name   = "${var.name_prefix}-load-balancer-nsg"
-  freeform_tags  = var.freeform_tags
-}
-
 locals {
   tcp_port_rules = {
     api_from_workers_6443 = {
@@ -100,24 +93,6 @@ locals {
       max         = 10250
       description = "Kubernetes API to kubelet"
     }
-    workers_from_lb_nodeports = {
-      nsg_id      = oci_core_network_security_group.workers.id
-      direction   = "INGRESS"
-      peer        = oci_core_network_security_group.load_balancer.id
-      peer_type   = "NETWORK_SECURITY_GROUP"
-      min         = 30000
-      max         = 32767
-      description = "Load balancer to Kubernetes NodePorts"
-    }
-    workers_from_lb_health = {
-      nsg_id      = oci_core_network_security_group.workers.id
-      direction   = "INGRESS"
-      peer        = oci_core_network_security_group.load_balancer.id
-      peer_type   = "NETWORK_SECURITY_GROUP"
-      min         = 10256
-      max         = 10256
-      description = "Load balancer to kube-proxy health port"
-    }
     workers_to_api_6443 = {
       nsg_id      = oci_core_network_security_group.workers.id
       direction   = "EGRESS"
@@ -171,24 +146,6 @@ locals {
       min         = 53
       max         = 53
       description = "Pod TCP DNS egress through NAT; NetworkPolicy restricts workloads further"
-    }
-    lb_to_workers_nodeports = {
-      nsg_id      = oci_core_network_security_group.load_balancer.id
-      direction   = "EGRESS"
-      peer        = oci_core_network_security_group.workers.id
-      peer_type   = "NETWORK_SECURITY_GROUP"
-      min         = 30000
-      max         = 32767
-      description = "Load balancer to Kubernetes NodePorts"
-    }
-    lb_to_workers_health = {
-      nsg_id      = oci_core_network_security_group.load_balancer.id
-      direction   = "EGRESS"
-      peer        = oci_core_network_security_group.workers.id
-      peer_type   = "NETWORK_SECURITY_GROUP"
-      min         = 10256
-      max         = 10256
-      description = "Load balancer to kube-proxy health port"
     }
   }
 
@@ -419,24 +376,5 @@ resource "oci_core_network_security_group_security_rule" "icmp" {
   icmp_options {
     type = 3
     code = 4
-  }
-}
-
-resource "oci_core_network_security_group_security_rule" "load_balancer_https" {
-  for_each = var.public_ingress_cidrs
-
-  network_security_group_id = oci_core_network_security_group.load_balancer.id
-  direction                 = "INGRESS"
-  protocol                  = "6"
-  source                    = each.value
-  source_type               = "CIDR_BLOCK"
-  description               = "HTTPS from Cloudflare proxy network"
-  stateless                 = false
-
-  tcp_options {
-    destination_port_range {
-      min = 443
-      max = 443
-    }
   }
 }

@@ -13,7 +13,7 @@ At the moment, Terraform creates:
 
 - a protected project compartment;
 - a dedicated VCN with separate subnets for the private Kubernetes API,
-  workers, VCN-native pods, and a future public load balancer;
+  workers, VCN-native pods, and a Kubernetes-managed public load balancer;
 - an OKE Basic cluster with a private API endpoint;
 - two private `VM.Standard.A1.Flex` workers using the reviewed ARM image;
 - an OCI Bastion for temporary access to the private Kubernetes API;
@@ -21,8 +21,8 @@ At the moment, Terraform creates:
 - a software-protected OCI KMS key used only for OpenBao auto-unseal;
 - a private, versioned workload-backup bucket with short retention;
 - actual and forecast spending alerts for the project compartment;
-- network controls that limit the future HTTPS origin to Cloudflare proxy
-  addresses.
+- a cluster-principal IAM policy for creating and maintaining service
+  load-balancer frontend NSGs in this project compartment.
 
 The worker pool is fixed at two nodes. Each node gets 2 OCPUs, 12 GB of memory,
 and a 50 GB boot volume. Terraform rejects larger or paid fallback shapes. This
@@ -36,11 +36,13 @@ The network is divided by responsibility:
 | `10.20.0.0/28` | Private OKE API and Bastion endpoint |
 | `10.20.1.0/24` | Private worker nodes |
 | `10.20.2.0/24` | VCN-native pod addresses |
-| `10.20.3.0/24` | Future public load balancer |
+| `10.20.3.0/24` | Kubernetes-managed public load balancer |
 
-Still to add: the public load balancer and Cloudflare DNS. OpenBao's 50 GB disk
-will be created later from its Kubernetes PVC, but Terraform already includes it
-in the storage budget.
+Envoy Gateway creates the load balancer from a Kubernetes Service and pins its
+Flexible shape to 10 Mbps. OCI's cloud controller creates a frontend NSG from
+that Service's Cloudflare-only source ranges and uses Terraform's worker NSG as
+the default backend. This avoids placing live NSG identifiers in Git. The load
+balancer itself is not a Terraform resource.
 
 ## Repository structure
 
@@ -132,6 +134,9 @@ Only apply after reading the plan. The project compartment has
   TCP/6443.
 - Worker instance principals can use only the OpenBao KMS key; they cannot
   manage the key or vault.
+- The exact OKE cluster principal can manage load-balancer NSGs only inside
+  this project compartment. Its VCN grant is limited to read, attach, and
+  detach permissions rather than full VCN administration.
 - The workload backup bucket is private and old data is expired automatically.
 - OCI IAM grants access to the API boundary; Kubernetes RBAC separately decides
   what an authenticated identity may do inside the cluster.
