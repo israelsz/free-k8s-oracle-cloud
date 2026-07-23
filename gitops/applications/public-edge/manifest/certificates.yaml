@@ -10,7 +10,7 @@ spec:
     kind: ClusterIssuer
     name: letsencrypt-production
   dnsNames:
-    - argocd.ops.israheck.com
+    - argocd.israheck.com
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -24,5 +24,4 @@ spec:
     kind: ClusterIssuer
     name: letsencrypt-production
   dnsNames:
-    - openbao.ops.israheck.com
-
+    - openbao.israheck.com

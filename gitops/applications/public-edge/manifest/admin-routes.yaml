@@ -18,7 +18,7 @@ spec:
       namespace: envoy-gateway-system
       sectionName: argocd-https
   hostnames:
-    - argocd.ops.israheck.com
+    - argocd.israheck.com
   rules:
     - matches:
         - path:
@@ -72,7 +72,7 @@ spec:
       namespace: envoy-gateway-system
       sectionName: openbao-https
   hostnames:
-    - openbao.ops.israheck.com
+    - openbao.israheck.com
   rules:
     - matches:
         - path:

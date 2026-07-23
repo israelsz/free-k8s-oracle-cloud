@@ -12,7 +12,7 @@ spec:
       name: public-edge
   listeners:
     - name: argocd-https
-      hostname: argocd.ops.israheck.com
+      hostname: argocd.israheck.com
       protocol: HTTPS
       port: 443
       tls:
@@ -31,7 +31,7 @@ spec:
                 values:
                   - argocd
     - name: openbao-https
-      hostname: openbao.ops.israheck.com
+      hostname: openbao.israheck.com
       protocol: HTTPS
       port: 443
       tls:
@@ -49,4 +49,3 @@ spec:
                 operator: In
                 values:
                   - openbao
-
