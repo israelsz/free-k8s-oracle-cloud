@@ -86,7 +86,9 @@ webhook:
       memory: 96Mi
       ephemeral-storage: 128Mi
   livenessProbe:
-    enabled: true
+    # This ESO process exposes readiness but no usable /healthz endpoint.
+    # Enabling the chart's optional liveness probe causes a 404 restart loop.
+    enabled: false
   readinessProbe:
     enabled: true
   podDisruptionBudget:
@@ -106,7 +108,9 @@ certController:
       memory: 96Mi
       ephemeral-storage: 128Mi
   livenessProbe:
-    enabled: true
+    # Keep the chart-supported readiness check without probing an endpoint
+    # that the certificate-controller process does not register.
+    enabled: false
   readinessProbe:
     enabled: true
   podDisruptionBudget:
