@@ -12,3 +12,18 @@ and failure model of this two-node cluster.
 The OpenBao root CA is not stored in this folder or in Git. The OpenBao
 application declares a `Certificate`; cert-manager generates its private key
 inside the `cert-manager` namespace and stores it in a Kubernetes Secret.
+
+The separate `cloudflare-dns` application declares Let's Encrypt staging and
+production `ClusterIssuer` resources after External Secrets is available. Its
+Cloudflare user API token is delivered from OpenBao through a namespaced
+`SecretStore`; no token, personal domain, zone ID, or email address is committed
+there.
+
+Create a dedicated token for this issuer with only:
+
+- `Zone - Zone - Read`;
+- `Zone - DNS - Edit`;
+- access to one specific zone.
+
+Use staging for integration checks. Workloads request production certificates
+only after their DNS names and Gateway routes have been reviewed.

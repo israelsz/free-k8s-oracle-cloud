@@ -1,0 +1,72 @@
+image:
+  tag: v0.21.0
+  pullPolicy: IfNotPresent
+
+revisionHistoryLimit: 2
+deploymentStrategy:
+  type: Recreate
+
+serviceAccount:
+  create: true
+  name: external-dns
+  automountServiceAccountToken: true
+
+rbac:
+  create: true
+
+provider:
+  name: cloudflare
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-token
+        key: api-token
+
+# Services are a harmless initial source because none are opted in. This changes
+# to gateway-httproute after Envoy Gateway installs the Gateway API CRDs.
+sources:
+  - service
+namespaced: true
+sourceNamespace: external-dns
+
+# Only resources with this annotation are allowed to propose public records.
+annotationFilter: external-dns.alpha.kubernetes.io/expose=public
+
+policy: sync
+registry: txt
+txtOwnerId: oracle-free-oke-prod
+# Keep ownership TXT records separate from A/AAAA/CNAME names, including apex
+# records. This value is permanent once ExternalDNS creates its first record.
+txtPrefix: _edns-%{record_type}.
+
+# The Cloudflare token is scoped to exactly one zone. That provider-side
+# boundary avoids committing a personal domain or zone ID to this repository.
+domainFilters: []
+managedRecordTypes:
+  - A
+  - AAAA
+  - CNAME
+
+interval: 2m
+triggerLoopOnEvent: true
+logLevel: info
+logFormat: json
+
+extraArgs:
+  cloudflare-dns-records-per-page: "5000"
+  cloudflare-record-comment: Managed by ExternalDNS
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 48Mi
+    ephemeral-storage: 32Mi
+  limits:
+    cpu: 150m
+    memory: 128Mi
+    ephemeral-storage: 128Mi
+
+serviceMonitor:
+  enabled: false

@@ -16,7 +16,14 @@ applications/
 │   ├── application.yaml
 │   ├── values.yaml
 │   └── manifest/
+├── cloudflare-dns/
+│   ├── application.yaml
+│   └── manifest/
 ├── external-secrets/
+│   ├── application.yaml
+│   ├── values.yaml
+│   └── manifest/
+├── external-dns/
 │   ├── application.yaml
 │   ├── values.yaml
 │   └── manifest/

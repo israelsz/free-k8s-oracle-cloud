@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflare-dns
+  namespace: argocd
+  annotations:
+    # Issuers and token delivery depend on cert-manager, OpenBao, and ESO.
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  source:
+    repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+    targetRevision: main
+    path: gitops/applications/cloudflare-dns/manifest
+
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 15
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+    syncOptions:
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - SkipDryRunOnMissingResource=true
