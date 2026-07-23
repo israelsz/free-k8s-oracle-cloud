@@ -24,7 +24,11 @@ ownership TXT records from colliding with application records and must not be
 changed after the first record is created.
 
 The initial source is `service`, limited to the otherwise empty `external-dns`
-namespace, so the first deployment needs no cluster-wide read role. After Envoy
-Gateway installs the Gateway API CRDs, it changes to `gateway-httproute` with
-reviewed Gateway API read permissions. Public `HTTPRoute` objects will carry
-both the opt-in annotation and Cloudflare's per-route proxy annotation.
+namespace. The Service source also starts a Node watcher when it calculates
+targets, so a small ClusterRole grants only `get`, `list`, and `watch` for
+Nodes. All Service reads remain limited to the `external-dns` namespace.
+
+After Envoy Gateway installs the Gateway API CRDs, the source changes to
+`gateway-httproute` with reviewed Gateway API read permissions. Public
+`HTTPRoute` objects will carry both the opt-in annotation and Cloudflare's
+per-route proxy annotation.
