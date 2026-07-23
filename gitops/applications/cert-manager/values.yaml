@@ -3,20 +3,21 @@ image:
   tag: v1.21.0
   pullPolicy: IfNotPresent
 
+global:
+  revisionHistoryLimit: 2
+  rbac:
+    create: true
+    # Do not extend Kubernetes' broad default view/edit roles.
+    aggregateClusterRoles: false
+  leaderElection:
+    namespace: cert-manager
+
 crds:
   enabled: true
   # Removing a Helm release must not remove every Certificate and Issuer API.
   keep: true
 
-rbac:
-  create: true
-  # Do not extend Kubernetes' broad default view/edit roles.
-  aggregateClusterRoles: false
-
 replicaCount: 1
-revisionHistoryLimit: 2
-leaderElection:
-  namespace: cert-manager
 
 # One replica is appropriate for this two-node project cluster. Leader election
 # is still enabled, so scaling later does not change controller behavior.
