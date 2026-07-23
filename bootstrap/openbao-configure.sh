@@ -76,7 +76,8 @@ set -eu
 
 admin_username="$1"
 admin_policy="$2"
-export BAO_ADDR="http://127.0.0.1:8200"
+export BAO_ADDR="https://127.0.0.1:8200"
+export BAO_CACERT="/openbao/tls/ca.crt"
 
 IFS= read -r BAO_TOKEN
 IFS= read -r admin_password

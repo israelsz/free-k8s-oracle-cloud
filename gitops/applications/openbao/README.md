@@ -71,6 +71,36 @@ No general Kubernetes role is created. Each application will get its own role
 later, bound to one service account and namespace and granting access only to
 that application's secret path.
 
+## Internal TLS
+
+OpenBao accepts only TLS 1.3 on its API and Raft ports. cert-manager creates a
+private ECDSA root CA in the `cert-manager` namespace and renews OpenBao's
+90-day server certificate 15 days before expiry. The server certificate covers
+the active Service, the stable Raft pod address, and loopback administration.
+
+The CA private key exists only in the `openbao-root-ca` Kubernetes Secret.
+trust-manager copies the public certificate—not the private key—to a ConfigMap
+named `openbao-internal-ca` in namespaces labeled
+`openbao-trust=enabled`.
+
+The StatefulSet uses `OnDelete` updates to prevent an unattended restart of the
+only OpenBao replica. When TLS is first added to an existing cluster, wait for
+the certificate before restarting the pod:
+
+```console
+kubectl --namespace openbao wait \
+  --for=condition=Ready certificate/openbao-server \
+  --timeout=180s
+kubectl --namespace openbao delete pod openbao-0
+kubectl --namespace openbao wait \
+  --for=condition=Ready pod/openbao-0 \
+  --timeout=300s
+kubectl --namespace openbao exec openbao-0 -- bao status
+```
+
+The last command verifies both OCI KMS auto-unseal and the private CA because
+the in-pod client does not skip certificate validation.
+
 ## Secret path convention
 
 KV v2 entries use this logical path:
@@ -111,6 +141,5 @@ all non-metadata traffic passes onward to normal Kubernetes NetworkPolicies.
 The namespace policy also allows the private OKE API subnet on TCP 6443 so
 OpenBao's Kubernetes service registration can update its active-pod label.
 
-Internal server TLS, per-application Kubernetes auth roles, durable audit
-shipping, Raft snapshots, and secret-delivery controllers follow after this
-bootstrap checkpoint.
+Per-application Kubernetes auth roles, durable audit shipping, and Raft
+snapshots follow after this checkpoint.

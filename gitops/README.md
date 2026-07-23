@@ -26,8 +26,10 @@ in that application's optional `manifest/` directory.
 | ---: | --- |
 | -40 | Namespaces, quotas, RBAC, storage, and admission foundations |
 | -30 | Networking and policy controllers |
-| -20 | OpenBao and secret-delivery controllers |
-| -10 | Database, certificate, DNS, and observability operators |
+| -25 | Certificate issuance and trust distribution controllers |
+| -20 | OpenBao |
+| -15 | Secret-delivery controllers |
+| -10 | Database, DNS, and observability operators |
 | 0 | Stateful instances, issuers, gateways, and monitoring configuration |
 | 10 | Portfolio and additional workloads |
 

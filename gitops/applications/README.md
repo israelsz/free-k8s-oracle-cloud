@@ -12,6 +12,10 @@ applications/
 ├── calico/
 │   ├── application.yaml
 │   └── manifest/
+├── cert-manager/
+│   ├── application.yaml
+│   ├── values.yaml
+│   └── manifest/
 ├── external-secrets/
 │   ├── application.yaml
 │   ├── values.yaml
@@ -19,7 +23,11 @@ applications/
 ├── local-path-provisioner/
 │   ├── application.yaml
 │   └── values.yaml
-└── openbao/
+├── openbao/
+│   ├── application.yaml
+│   ├── values.yaml
+│   └── manifest/
+└── trust-manager/
     ├── application.yaml
     ├── values.yaml
     └── manifest/

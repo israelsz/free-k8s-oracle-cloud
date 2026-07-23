@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    # Certificate APIs must exist before trust-manager and OpenBao TLS resources.
+    argocd.argoproj.io/sync-wave: "-25"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  sources:
+    # cert-manager recommends its OCI chart as the release source of truth.
+    - repoURL: quay.io/jetstack/charts
+      chart: cert-manager
+      targetRevision: v1.21.0
+      helm:
+        releaseName: cert-manager
+        valueFiles:
+          - $values/gitops/applications/cert-manager/values.yaml
+
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+    # Namespace network boundaries and resource limits are kept with the chart.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/cert-manager/manifest
+
+  # cert-manager writes these CA bundles after Helm creates the resources.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        # A future namespaced SecretStore will deliver the Cloudflare DNS token.
+        openbao-trust: enabled
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: v1.35
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: v1.35
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: v1.35
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 10
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+      - PruneLast=true

@@ -16,10 +16,27 @@ resources beside the rest of their manifests. OpenBao policies and Kubernetes
 auth roles are created separately and grant each workload read access only to
 its own path.
 
+Every namespace containing an OpenBao `SecretStore` must opt into the public CA
+bundle with the label `openbao-trust=enabled`. trust-manager then creates the
+`openbao-internal-ca` ConfigMap in that namespace. A store uses it like this:
+
+```yaml
+spec:
+  provider:
+    vault:
+      server: https://openbao-active.openbao.svc.cluster.local:8200
+      path: secret
+      version: v2
+      caProvider:
+        type: ConfigMap
+        name: openbao-internal-ca
+        key: ca.crt
+```
+
+Do not use `insecureSkipVerify` or a plain HTTP server URL. The service name is
+covered by the cert-manager certificate and the CA is renewed independently of
+application credentials.
+
 The end-to-end access check is intentionally not stored in Git. It can create a
 temporary namespace, service account, OpenBao path, policy, and role in the live
 cluster, verify the generated Kubernetes Secret, and then delete all test state.
-
-The store temporarily uses HTTP inside the restricted cluster network. Do not
-put Cloudflare or other real credentials behind it until internal TLS and the CA
-bundle are configured.

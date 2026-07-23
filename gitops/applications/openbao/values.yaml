@@ -1,7 +1,6 @@
 global:
-  # OpenBao has no public route. Internal TLS will be added with cert-manager;
-  # until then access is restricted to the cluster and operator tunnel.
-  tlsDisable: true
+  # TLS terminates in OpenBao itself; there is no plaintext listener.
+  tlsDisable: false
 
 # Secret injection will be introduced deliberately after the server is
 # initialized. Do not install a cluster-wide mutating webhook yet.
@@ -63,14 +62,26 @@ server:
       secretName: openbao-oci-kms
       secretKey: VAULT_OCIKMS_MANAGEMENT_ENDPOINT
 
+  # The in-pod CLI trusts the same private CA used by cluster clients.
+  extraEnvironmentVars:
+    BAO_CACERT: /openbao/tls/ca.crt
+    VAULT_CACERT: /openbao/tls/ca.crt
+
   # A read-only root filesystem leaves only these explicit writable locations.
   volumes:
     - name: tmp
       emptyDir:
         sizeLimit: 64Mi
+    - name: server-tls
+      secret:
+        secretName: openbao-server-tls
+        defaultMode: 0440
   volumeMounts:
     - name: tmp
       mountPath: /tmp
+    - name: server-tls
+      mountPath: /openbao/tls
+      readOnly: true
 
   readinessProbe:
     enabled: true
@@ -184,6 +195,9 @@ server:
   ha:
     enabled: true
     replicas: 1
+    # Stable, certificate-covered addresses avoid redirects to a raw pod IP.
+    apiAddr: https://openbao-active.openbao.svc.cluster.local:8200
+    clusterAddr: https://openbao-0.openbao-internal.openbao.svc.cluster.local:8201
     raft:
       enabled: true
       setNodeId: true
@@ -191,7 +205,10 @@ server:
         ui = false
 
         listener "tcp" {
-          tls_disable = 1
+          tls_disable = 0
+          tls_cert_file = "/openbao/tls/tls.crt"
+          tls_key_file = "/openbao/tls/tls.key"
+          tls_min_version = "tls13"
           # The OKE VCN-native pod network is IPv4-only.
           address = "0.0.0.0:8200"
           cluster_address = "0.0.0.0:8201"

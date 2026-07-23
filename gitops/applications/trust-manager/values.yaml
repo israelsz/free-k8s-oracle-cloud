@@ -1,0 +1,72 @@
+global:
+  rbac:
+    create: true
+    aggregateClusterRoles: false
+
+crds:
+  enabled: true
+  keep: true
+
+replicaCount: 1
+revisionHistoryLimit: 2
+
+image:
+  tag: v0.24.0
+  pullPolicy: IfNotPresent
+
+# This cluster distributes only its own private CA; the Debian public-CA package
+# and its additional init image are unnecessary.
+defaultPackage:
+  enabled: false
+
+# Public CA certificates go to ConfigMaps. Grant no cross-namespace Secret
+# target permissions.
+secretTargets:
+  enabled: false
+  authorizedSecretsAll: false
+  authorizedSecrets: []
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+    ephemeral-storage: 32Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi
+    ephemeral-storage: 128Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+app:
+  logFormat: json
+  logLevel: 1
+  leaderElection:
+    enabled: true
+  trust:
+    # Cluster-scoped Bundles may read source Secrets only from this namespace.
+    namespace: cert-manager
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  webhook:
+    port: 6443
+    tls:
+      helmCert:
+        enabled: false
+  metrics:
+    service:
+      enabled: false
+    servicemonitor:
+      enabled: false
+  podDisruptionBudget:
+    enabled: false

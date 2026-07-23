@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: trust-manager
+  namespace: trust-manager
+spec:
+  hard:
+    # One controller and one temporary surge pod during upgrades.
+    pods: "2"
+    requests.cpu: 100m
+    requests.memory: 256Mi
+    requests.ephemeral-storage: 256Mi
+    limits.cpu: 500m
+    limits.memory: 512Mi
+    limits.ephemeral-storage: 1Gi

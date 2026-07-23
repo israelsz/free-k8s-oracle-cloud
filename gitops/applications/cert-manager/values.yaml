@@ -1,0 +1,93 @@
+# The chart version and every component image are pinned to the same release.
+image:
+  tag: v1.21.0
+  pullPolicy: IfNotPresent
+
+crds:
+  enabled: true
+  # Removing a Helm release must not remove every Certificate and Issuer API.
+  keep: true
+
+rbac:
+  create: true
+  # Do not extend Kubernetes' broad default view/edit roles.
+  aggregateClusterRoles: false
+
+replicaCount: 1
+revisionHistoryLimit: 2
+leaderElection:
+  namespace: cert-manager
+
+# One replica is appropriate for this two-node project cluster. Leader election
+# is still enabled, so scaling later does not change controller behavior.
+podDisruptionBudget:
+  enabled: false
+
+enableCertificateOwnerRef: false
+prometheus:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+    ephemeral-storage: 32Mi
+  limits:
+    cpu: 250m
+    memory: 192Mi
+    ephemeral-storage: 128Mi
+
+webhook:
+  replicaCount: 1
+  image:
+    tag: v1.21.0
+    pullPolicy: IfNotPresent
+  config:
+    apiVersion: webhook.config.cert-manager.io/v1alpha1
+    kind: WebhookConfiguration
+    # OKE's private API endpoint can reach worker webhooks on this port.
+    securePort: 10250
+  podDisruptionBudget:
+    enabled: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 100m
+      memory: 96Mi
+      ephemeral-storage: 128Mi
+
+cainjector:
+  enabled: true
+  replicaCount: 1
+  image:
+    tag: v1.21.0
+    pullPolicy: IfNotPresent
+  podDisruptionBudget:
+    enabled: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+      ephemeral-storage: 128Mi
+
+startupapicheck:
+  enabled: true
+  image:
+    tag: v1.21.0
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+      ephemeral-storage: 16Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+      ephemeral-storage: 64Mi

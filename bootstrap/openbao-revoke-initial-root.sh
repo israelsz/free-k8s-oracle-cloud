@@ -48,7 +48,8 @@ fi
 kubectl --namespace "${namespace}" exec --stdin --tty "${pod}" -- sh -c '
   set -eu
 
-  export BAO_ADDR="http://127.0.0.1:8200"
+  export BAO_ADDR="https://127.0.0.1:8200"
+  export BAO_CACERT="/openbao/tls/ca.crt"
   export BAO_TOKEN_PATH="/tmp/openbao-root-revoke-token.$$"
   unset BAO_TOKEN VAULT_TOKEN
 

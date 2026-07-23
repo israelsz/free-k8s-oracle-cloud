@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trust-manager
+  namespace: argocd
+  annotations:
+    # trust-manager uses cert-manager for its own webhook certificate.
+    argocd.argoproj.io/sync-wave: "-24"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trust-manager
+  sources:
+    - repoURL: quay.io/jetstack/charts
+      chart: trust-manager
+      targetRevision: v0.24.0
+      helm:
+        releaseName: trust-manager
+        valueFiles:
+          - $values/gitops/applications/trust-manager/values.yaml
+
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/trust-manager/manifest
+
+  # cert-manager injects trust-manager's webhook CA at runtime.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: v1.35
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: v1.35
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: v1.35
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 10
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+      - PruneLast=true

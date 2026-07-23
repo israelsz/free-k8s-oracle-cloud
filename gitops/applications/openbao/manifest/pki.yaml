@@ -1,0 +1,126 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: openbao-selfsigned
+  annotations:
+    # Bootstrap only the root certificate; leaf certificates use openbao-ca.
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=confirm
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-root-ca
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+    argocd.argoproj.io/sync-options: Prune=confirm
+spec:
+  secretName: openbao-root-ca
+  commonName: OpenBao Internal Root CA
+  isCA: true
+  duration: 87600h
+  renewBefore: 8760h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    # Preserve the trust anchor's key across normal certificate renewal.
+    rotationPolicy: Never
+  usages:
+    - cert sign
+    - crl sign
+    - digital signature
+  issuerRef:
+    name: openbao-selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io
+  secretTemplate:
+    annotations:
+      # The private CA requires an explicit recovery decision before deletion.
+      argocd.argoproj.io/sync-options: Delete=false
+    labels:
+      app.kubernetes.io/name: openbao-root-ca
+      app.kubernetes.io/part-of: openbao
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: openbao-ca
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-options: Prune=confirm
+spec:
+  ca:
+    # ClusterIssuer source Secrets live in cert-manager's configured
+    # cluster-resource namespace.
+    secretName: openbao-root-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openbao-server
+  namespace: openbao
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=confirm
+spec:
+  secretName: openbao-server-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages:
+    - server auth
+    - digital signature
+  dnsNames:
+    - openbao
+    - openbao.openbao
+    - openbao.openbao.svc
+    - openbao.openbao.svc.cluster.local
+    - openbao-active
+    - openbao-active.openbao
+    - openbao-active.openbao.svc
+    - openbao-active.openbao.svc.cluster.local
+    - openbao-0.openbao-internal
+    - openbao-0.openbao-internal.openbao
+    - openbao-0.openbao-internal.openbao.svc
+    - openbao-0.openbao-internal.openbao.svc.cluster.local
+  ipAddresses:
+    # OpenBao administration runs inside the pod against its loopback listener.
+    - 127.0.0.1
+  issuerRef:
+    name: openbao-ca
+    kind: ClusterIssuer
+    group: cert-manager.io
+  secretTemplate:
+    labels:
+      app.kubernetes.io/name: openbao-server
+      app.kubernetes.io/part-of: openbao
+---
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: openbao-internal-ca
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  sources:
+    - secret:
+        # trust-manager is restricted to reading sources from cert-manager.
+        name: openbao-root-ca
+        key: tls.crt
+  target:
+    configMap:
+      key: ca.crt
+      metadata:
+        labels:
+          app.kubernetes.io/name: openbao-internal-ca
+          app.kubernetes.io/part-of: openbao
+    # Applications opt in to this public trust anchor namespace by namespace.
+    namespaceSelector:
+      matchLabels:
+        openbao-trust: enabled
