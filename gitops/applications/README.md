@@ -12,6 +12,10 @@ applications/
 ├── calico/
 │   ├── application.yaml
 │   └── manifest/
+├── external-secrets/
+│   ├── application.yaml
+│   ├── values.yaml
+│   └── manifest/
 ├── local-path-provisioner/
 │   ├── application.yaml
 │   └── values.yaml

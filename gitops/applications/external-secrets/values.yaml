@@ -1,0 +1,116 @@
+# One replica of each controller fits the two-node project cluster. None of
+# these stateless components justifies a PDB or leader election yet.
+replicaCount: 1
+revisionHistoryLimit: 2
+leaderElect: false
+concurrent: 1
+
+image:
+  tag: v2.4.1
+  pullPolicy: IfNotPresent
+
+installCRDs: true
+crds:
+  # Keep the namespace-scoped pull model and remove unused cluster-wide and
+  # write-back APIs from the installed CRD surface.
+  createClusterExternalSecret: false
+  createClusterSecretStore: false
+  createClusterGenerator: false
+  createClusterPushSecret: false
+  createPushSecret: false
+
+processClusterExternalSecret: false
+processClusterStore: false
+processClusterGenerator: false
+processClusterPushSecret: false
+processPushSecret: false
+processSecretStore: true
+
+# OpenBao performs TokenReview with its own auth-delegator binding. ESO only
+# needs TokenRequest permission for the explicitly referenced service account.
+systemAuthDelegator: false
+openshiftFinalizers: false
+
+vault:
+  # A fresh five-minute OpenBao token per reconciliation is cheap at this size
+  # and avoids keeping workload tokens in the controller cache.
+  enableTokenCache: false
+
+serviceAccount:
+  create: true
+  name: external-secrets
+  automount: true
+
+rbac:
+  create: true
+  servicebindings:
+    create: false
+  aggregateToView: false
+  aggregateToEdit: false
+
+genericTargets:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+    ephemeral-storage: 32Mi
+  limits:
+    cpu: 250m
+    memory: 192Mi
+    ephemeral-storage: 128Mi
+
+livenessProbe:
+  enabled: true
+readinessProbe:
+  enabled: true
+
+podDisruptionBudget:
+  enabled: false
+
+serviceMonitor:
+  enabled: false
+
+webhook:
+  create: true
+  replicaCount: 1
+  revisionHistoryLimit: 2
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 100m
+      memory: 96Mi
+      ephemeral-storage: 128Mi
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+  podDisruptionBudget:
+    enabled: false
+
+certController:
+  create: true
+  replicaCount: 1
+  revisionHistoryLimit: 2
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 100m
+      memory: 96Mi
+      ephemeral-storage: 128Mi
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+  podDisruptionBudget:
+    enabled: false
+
+bitwarden-sdk-server:
+  enabled: false

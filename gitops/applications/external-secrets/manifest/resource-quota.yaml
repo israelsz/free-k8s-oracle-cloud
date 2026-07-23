@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: external-secrets
+  namespace: external-secrets
+spec:
+  hard:
+    # Allow one surge pod for each of the three single-replica Deployments so
+    # chart upgrades do not deadlock against the quota.
+    pods: "6"
+    requests.cpu: 200m
+    requests.memory: 512Mi
+    limits.cpu: 1
+    limits.memory: 1Gi

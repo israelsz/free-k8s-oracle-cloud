@@ -71,6 +71,34 @@ No general Kubernetes role is created. Each application will get its own role
 later, bound to one service account and namespace and granting access only to
 that application's secret path.
 
+## Secret path convention
+
+KV v2 entries use this logical path:
+
+```text
+secret/<environment>/<namespace>/<workload>/<secret-set>
+```
+
+For example, a website database bundle lives at
+`secret/prod/portfolio/website/database`. The CLI uses
+`bao kv ... -mount=secret prod/portfolio/website/database`; KV v2 policies use
+the API path `secret/data/prod/portfolio/website/*`; and an ExternalSecret uses
+the remote key `prod/portfolio/website/database` because its SecretStore already
+names the `secret` mount.
+
+Conventions and boundaries:
+
+- use lowercase DNS-style segments and lower-snake-case property names;
+- group values that rotate together, such as `username`, `password`, `host`,
+  `port`, and `database`, in one secret set;
+- create one read-only policy and Kubernetes auth role per workload;
+- bind the role to one service account and one namespace, never wildcards;
+- use explicit ExternalSecret keys and properties instead of recursive `find`;
+- do not place usernames, domains, customer names, account IDs, or secret values
+  in paths because paths appear in policies, manifests, and audit records;
+- avoid shared secrets; when sharing is unavoidable, give the shared capability
+  its own path and explicitly attach it to each consumer policy.
+
 ## Network boundary
 
 OpenBao has only ClusterIP services and no Ingress, Gateway route, or UI Service.

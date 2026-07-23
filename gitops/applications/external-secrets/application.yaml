@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets
+  namespace: argocd
+  annotations:
+    # OpenBao must exist before its Kubernetes clients are installed.
+    argocd.argoproj.io/sync-wave: "-15"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  sources:
+    # The chart and application release are pinned together.
+    - repoURL: https://charts.external-secrets.io
+      chart: external-secrets
+      targetRevision: 2.4.1
+      helm:
+        releaseName: external-secrets
+        valueFiles:
+          - $values/gitops/applications/external-secrets/values.yaml
+
+    # Public, non-secret chart settings live beside this Application.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+    # Network boundaries and resource guardrails are managed with the chart.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/external-secrets/manifest
+
+  # The chart's certificate controller injects the webhook CA at runtime.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        # This is the only namespace-level permission to contact OpenBao.
+        openbao-client: "true"
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: v1.35
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: v1.35
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: v1.35
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 5
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+      - PruneLast=true
