@@ -13,6 +13,10 @@ The OpenBao root CA is not stored in this folder or in Git. The OpenBao
 application declares a `Certificate`; cert-manager generates its private key
 inside the `cert-manager` namespace and stores it in a Kubernetes Secret.
 
+The controller may query public authoritative DNS servers directly while it
+checks ACME DNS-01 challenges. Its NetworkPolicy therefore permits outbound
+TCP and UDP port 53; the webhook and CA injector do not receive that access.
+
 The separate `cloudflare-dns` application declares Let's Encrypt staging and
 production `ClusterIssuer` resources after External Secrets is available. Its
 Cloudflare user API token is delivered from OpenBao through a namespaced

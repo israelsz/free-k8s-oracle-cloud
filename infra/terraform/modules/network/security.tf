@@ -163,6 +163,15 @@ locals {
       max         = 443
       description = "Pod HTTPS egress through NAT; NetworkPolicy restricts workloads further"
     }
+    pods_to_internet_dns_tcp = {
+      nsg_id      = oci_core_network_security_group.pods.id
+      direction   = "EGRESS"
+      peer        = "0.0.0.0/0"
+      peer_type   = "CIDR_BLOCK"
+      min         = 53
+      max         = 53
+      description = "Pod TCP DNS egress through NAT; NetworkPolicy restricts workloads further"
+    }
     lb_to_workers_nodeports = {
       nsg_id      = oci_core_network_security_group.load_balancer.id
       direction   = "EGRESS"
@@ -180,6 +189,18 @@ locals {
       min         = 10256
       max         = 10256
       description = "Load balancer to kube-proxy health port"
+    }
+  }
+
+  udp_port_rules = {
+    pods_to_internet_dns_udp = {
+      nsg_id      = oci_core_network_security_group.pods.id
+      direction   = "EGRESS"
+      peer        = "0.0.0.0/0"
+      peer_type   = "CIDR_BLOCK"
+      min         = 53
+      max         = 53
+      description = "Pod UDP DNS egress through NAT; NetworkPolicy restricts workloads further"
     }
   }
 
@@ -345,6 +366,27 @@ resource "oci_core_network_security_group_security_rule" "tcp_all" {
   destination_type          = each.value.direction == "EGRESS" ? each.value.peer_type : null
   description               = each.value.description
   stateless                 = false
+}
+
+resource "oci_core_network_security_group_security_rule" "udp_port" {
+  for_each = local.udp_port_rules
+
+  network_security_group_id = each.value.nsg_id
+  direction                 = each.value.direction
+  protocol                  = "17"
+  source                    = each.value.direction == "INGRESS" ? each.value.peer : null
+  source_type               = each.value.direction == "INGRESS" ? each.value.peer_type : null
+  destination               = each.value.direction == "EGRESS" ? each.value.peer : null
+  destination_type          = each.value.direction == "EGRESS" ? each.value.peer_type : null
+  description               = each.value.description
+  stateless                 = false
+
+  udp_options {
+    destination_port_range {
+      min = each.value.min
+      max = each.value.max
+    }
+  }
 }
 
 resource "oci_core_network_security_group_security_rule" "all_protocols" {

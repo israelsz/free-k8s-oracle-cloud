@@ -67,3 +67,28 @@ spec:
       ports:
         - port: 10250
           protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: acme-dns-self-check
+  namespace: cert-manager
+spec:
+  # Only the main controller performs ACME DNS-01 self-checks.
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: cert-manager
+  policyTypes:
+    - Egress
+  egress:
+    # cert-manager follows the zone's NS records and queries its authoritative
+    # nameservers directly. Those servers are outside the cluster.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
