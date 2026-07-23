@@ -24,12 +24,13 @@ env:
         name: cloudflare-api-token
         key: api-token
 
-# Services are a harmless initial source because none are opted in. This changes
-# to gateway-httproute after Envoy Gateway installs the Gateway API CRDs.
+# Public names come from accepted HTTPRoutes and their parent Gateway address.
 sources:
-  - service
-namespaced: true
-sourceNamespace: external-dns
+  - gateway-httproute
+
+# Routes live beside their applications in multiple namespaces. The generated
+# ClusterRole is read-only and contains only Gateways, HTTPRoutes, and Namespaces.
+namespaced: false
 
 # Only resources with this annotation are allowed to propose public records.
 annotationFilter: external-dns.alpha.kubernetes.io/expose=public

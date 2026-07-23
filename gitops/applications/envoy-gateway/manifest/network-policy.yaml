@@ -128,6 +128,31 @@ spec:
           protocol: TCP
         - port: 18002
           protocol: TCP
+    # Browser traffic is re-encrypted from Envoy to the Argo CD server.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: argocd
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: argocd
+              app.kubernetes.io/name: argocd-server
+      ports:
+        - port: 8080
+          protocol: TCP
+    # OpenBao already serves verified HTTPS directly on its application port.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openbao
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: openbao
+              app.kubernetes.io/name: openbao
+              component: server
+      ports:
+        - port: 8200
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -148,4 +173,3 @@ spec:
       ports:
         - port: 10443
           protocol: TCP
-

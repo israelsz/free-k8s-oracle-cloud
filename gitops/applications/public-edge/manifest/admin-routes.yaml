@@ -1,0 +1,86 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    # ExternalDNS ignores every route without this explicit opt-in.
+    external-dns.alpha.kubernetes.io/expose: public
+    # Cloudflare answers publicly and proxies HTTPS to the OCI origin.
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    # Gateway and certificates are established before application routes.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+      namespace: envoy-gateway-system
+      sectionName: argocd-https
+  hostnames:
+    - argocd.ops.israheck.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        # Port 443 is re-encrypted and verified by argocd-server's
+        # BackendTLSPolicy in the same namespace as this Service.
+        - group: ""
+          kind: Service
+          name: argocd-server
+          port: 443
+          weight: 1
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: openbao-ui
+  namespace: openbao
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: openbao-ui
+      sectionName: https
+  validation:
+    # The UI Service selects the same active pod as this certificate-covered
+    # stable address, which Envoy sends as SNI during the TLS handshake.
+    hostname: openbao-active.openbao.svc.cluster.local
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: openbao-internal-ca
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openbao
+  namespace: openbao
+  annotations:
+    external-dns.alpha.kubernetes.io/expose: public
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+      namespace: envoy-gateway-system
+      sectionName: openbao-https
+  hostnames:
+    - openbao.ops.israheck.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: openbao-ui
+          port: 8200
+          weight: 1

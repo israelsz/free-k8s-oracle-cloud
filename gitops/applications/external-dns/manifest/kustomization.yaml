@@ -3,6 +3,5 @@ kind: Kustomization
 
 resources:
   - network-policy.yaml
-  - rbac.yaml
   - resource-quota.yaml
   - secret.yaml

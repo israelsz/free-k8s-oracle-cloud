@@ -124,6 +124,17 @@ server:
         ports:
           - port: 8200
             protocol: TCP
+      # Only the public Envoy data plane can reach the UI/API backend.
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: envoy-gateway-system
+            podSelector:
+              matchLabels:
+                platform.israheck.com/edge-proxy: public
+        ports:
+          - port: 8200
+            protocol: TCP
     egress:
       - to:
           - namespaceSelector:

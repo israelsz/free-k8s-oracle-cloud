@@ -9,6 +9,9 @@ metadata:
     # after OpenBao and External Secrets can deliver Argo CD's OIDC client.
     # More negative sync waves run earlier.
     argocd.argoproj.io/sync-wave: "-10"
+    # External Secrets adds API defaults after admission. Compare the
+    # server-normalized object so those defaults do not look like Git drift.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   # The default project permits this repository and the in-cluster destination.
   project: default
