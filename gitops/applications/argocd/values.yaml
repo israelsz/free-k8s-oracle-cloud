@@ -12,11 +12,73 @@ configs:
   cm:
     admin.enabled: true
     exec.enabled: false
+    # Argo CD uses its native OIDC implementation; Dex remains disabled.
+    url: https://argocd.ops.israheck.com
+    oidc.config: |
+      name: Google
+      issuer: https://accounts.google.com
+      clientID: $argocd-google-oidc:clientID
+      clientSecret: $argocd-google-oidc:clientSecret
+      requestedScopes: ["openid", "profile", "email"]
+      requestedIDTokenClaims: {"email": {"essential": true}}
+  rbac:
+    # An authenticated but unmapped Google account receives no permissions.
+    policy.default: role:authenticated
+    policy.csv: |
+      g, iariaspanez@gmail.com, role:admin
+    scopes: "[email]"
 
 server:
   replicas: 1
   service:
     type: ClusterIP
+    # Envoy uses this named port together with the BackendTLSPolicy below.
+    servicePortHttpsAppProtocol: https
+
+  # Argo CD automatically watches its conventional argocd-server-tls Secret.
+  # cert-manager replaces the server's generated self-signed certificate
+  # without storing a private key in Helm values or Git.
+  certificate:
+    enabled: true
+    domain: argocd-server.argocd.svc.cluster.local
+    additionalHosts:
+      - argocd-server
+      - argocd-server.argocd
+      - argocd-server.argocd.svc
+    duration: 2160h
+    renewBefore: 360h
+    issuer:
+      group: cert-manager.io
+      kind: ClusterIssuer
+      name: openbao-ca
+    privateKey:
+      algorithm: ECDSA
+      size: 256
+      encoding: PKCS8
+      rotationPolicy: Always
+    usages:
+      - server auth
+      - digital signature
+    annotations:
+      argocd.argoproj.io/sync-wave: "-1"
+      argocd.argoproj.io/sync-options: Prune=confirm
+
+  # Envoy terminates the browser-facing connection and then starts a separate,
+  # CA-verified TLS connection to Argo CD's internal Service.
+  backendTLSPolicy:
+    enabled: true
+    targetRefs:
+      - group: ""
+        kind: Service
+        name: argocd-server
+        sectionName: https
+    validation:
+      hostname: argocd-server.argocd.svc.cluster.local
+      caCertificateRefs:
+        - group: ""
+          kind: ConfigMap
+          name: openbao-internal-ca
+
   emptyDir:
     sizeLimit: 256Mi
   resources:

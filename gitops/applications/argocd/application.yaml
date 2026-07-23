@@ -5,9 +5,10 @@ metadata:
   name: argocd
   namespace: argocd
   annotations:
-    # Install the deployment controller before later platform applications.
+    # Bootstrap installs the controller directly. Self-management takes over
+    # after OpenBao and External Secrets can deliver Argo CD's OIDC client.
     # More negative sync waves run earlier.
-    argocd.argoproj.io/sync-wave: "-50"
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   # The default project permits this repository and the in-cluster destination.
   project: default
@@ -39,7 +40,17 @@ spec:
       # This alias makes the repository available through the $values prefix.
       ref: values
 
+    # Source 3: External Secrets delivers the Google OIDC client from OpenBao.
+    # No client identifier or client secret is stored in this repository.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/argocd/manifest
+
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        # trust-manager distributes OpenBao's public CA to this namespace.
+        openbao-trust: enabled
     automated:
       # Apply reviewed changes from main automatically.
       enabled: true
