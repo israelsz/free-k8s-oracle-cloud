@@ -47,7 +47,13 @@ spec:
       selfHeal: true
       allowEmpty: false
     retry:
-      limit: 5
+      # On a new cluster the Certificate APIs may still be starting. Keep
+      # retrying this dependency without making TLS bootstrap a manual repair.
+      limit: 15
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true

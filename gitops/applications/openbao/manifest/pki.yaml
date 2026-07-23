@@ -100,27 +100,3 @@ spec:
     labels:
       app.kubernetes.io/name: openbao-server
       app.kubernetes.io/part-of: openbao
----
-apiVersion: trust.cert-manager.io/v1alpha1
-kind: Bundle
-metadata:
-  name: openbao-internal-ca
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
-spec:
-  sources:
-    - secret:
-        # trust-manager is restricted to reading sources from cert-manager.
-        name: openbao-root-ca
-        key: tls.crt
-  target:
-    configMap:
-      key: ca.crt
-      metadata:
-        labels:
-          app.kubernetes.io/name: openbao-internal-ca
-          app.kubernetes.io/part-of: openbao
-    # Applications opt in to this public trust anchor namespace by namespace.
-    namespaceSelector:
-      matchLabels:
-        openbao-trust: enabled
