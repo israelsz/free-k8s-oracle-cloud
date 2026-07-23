@@ -50,3 +50,11 @@ authentication with OpenBao's rotating service-account token, and enables a
 versioned `secret/` KV store. It verifies the administrator login but does not
 revoke the initial root token; revoke that token only after testing a separate
 administrator login yourself.
+
+After that separate login succeeds, run
+`bootstrap/openbao-revoke-initial-root.sh`. The script asks for explicit
+confirmation, then lets OpenBao's own hidden login prompt read the root token.
+It temporarily stores the authenticated session under `/tmp` inside the pod,
+checks that the token carries the `root` policy, revokes it, and removes the
+temporary file. Recovery keys are unaffected and remain the offline path for
+generating an emergency root token.

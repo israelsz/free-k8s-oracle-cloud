@@ -76,14 +76,14 @@ set -eu
 
 admin_username="$1"
 admin_policy="$2"
-export VAULT_ADDR="http://127.0.0.1:8200"
+export BAO_ADDR="http://127.0.0.1:8200"
 
-IFS= read -r VAULT_TOKEN
+IFS= read -r BAO_TOKEN
 IFS= read -r admin_password
-export VAULT_TOKEN
+export BAO_TOKEN
 
 cleanup() {
-  unset VAULT_TOKEN admin_password admin_token
+  unset BAO_TOKEN admin_password admin_token
 }
 trap cleanup EXIT HUP INT TERM
 
@@ -140,11 +140,11 @@ fi
 
 # Prove the new login works, then immediately revoke this one test token.
 admin_token="$(
-  VAULT_TOKEN='' printf '%s' "${admin_password}" |
-    VAULT_TOKEN='' bao write -field=token \
+  BAO_TOKEN='' printf '%s' "${admin_password}" |
+    BAO_TOKEN='' bao write -field=token \
       "auth/userpass/login/${admin_username}" password=-
 )"
-VAULT_TOKEN="${admin_token}" bao token lookup >/dev/null
+BAO_TOKEN="${admin_token}" bao token lookup >/dev/null
 bao token revoke "${admin_token}" >/dev/null
 
 printf 'OpenBao post-initialization configuration completed.\n'

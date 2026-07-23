@@ -57,6 +57,11 @@ configure Kubernetes service-account authentication, and enable a versioned
 `secret/` KV store. The helper reads credentials interactively and never writes
 them to Git or a Kubernetes Secret.
 
+Once a separate administrator login works, run
+`bootstrap/openbao-revoke-initial-root.sh` to remove the non-expiring bootstrap
+credential. The recovery shares stay offline and can authorize generation of a
+new root token for a future emergency.
+
 Audit events are declared in the server configuration and written to the pod's
 standard output with OpenBao's normal HMAC protection. Kubernetes bounds the
 local container-log size; VictoriaLogs will become the durable destination when
