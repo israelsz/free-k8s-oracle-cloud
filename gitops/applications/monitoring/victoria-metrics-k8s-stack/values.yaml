@@ -252,9 +252,47 @@ grafana:
   initChownData:
     enabled: false
 
-  # This plugin provides the LogsQL query builder and live log view.
-  plugins:
-    - victoriametrics-logs-datasource
+  # Install the pinned VictoriaLogs plugin before Grafana starts. Installing it
+  # in Grafana's background installer can race with plugin registration.
+  extraContainerVolumes:
+    - name: grafana-plugin-download-tmp
+      emptyDir:
+        sizeLimit: 128Mi
+  extraInitContainers:
+    - name: install-victorialogs-datasource
+      image: '{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}'
+      imagePullPolicy: IfNotPresent
+      command:
+        - grafana
+        - cli
+        - --pluginsDir
+        - /var/lib/grafana/plugins
+        - plugins
+        - install
+        - victoriametrics-logs-datasource
+        - 0.30.1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+          ephemeral-storage: 64Mi
+        limits:
+          cpu: 250m
+          memory: 192Mi
+          ephemeral-storage: 256Mi
+      volumeMounts:
+        - name: storage
+          mountPath: /var/lib/grafana
+        - name: grafana-plugin-download-tmp
+          mountPath: /tmp
 
   admin:
     existingSecret: grafana-auth
@@ -346,8 +384,10 @@ grafana:
         ephemeral-storage: 64Mi
     datasources:
       enabled: true
-      # Avoid weakening Kubernetes API TLS verification for a localhost
-      # reload callback. Datasource changes take effect after a Grafana restart.
+      # Populate the shared provisioning directory before Grafana starts.
+      # Datasources are loaded only at startup, unlike watched dashboards.
+      initDatasources: true
+      watchMethod: LIST
       skipReload: true
     dashboards:
       enabled: true
