@@ -5,6 +5,10 @@ argocdReleaseOverride: victoria-metrics-k8s-stack
 
 global:
   clusterLabel: cluster
+  # OKE uses CRI-O with short-name enforcement. Always specify the registry so
+  # both chart pods and operator-generated pods use unambiguous image names.
+  image:
+    registry: docker.io
   extraLabels:
     app.kubernetes.io/part-of: monitoring
 

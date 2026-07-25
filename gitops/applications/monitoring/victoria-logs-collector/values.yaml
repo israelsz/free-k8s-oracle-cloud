@@ -1,6 +1,10 @@
 fullnameOverride: victoria-logs-collector
 
 global:
+  # OKE's CRI-O runtime rejects ambiguous images such as
+  # victoriametrics/vlagent; qualify them as docker.io images.
+  image:
+    registry: docker.io
   extraLabels:
     app.kubernetes.io/part-of: monitoring
 
