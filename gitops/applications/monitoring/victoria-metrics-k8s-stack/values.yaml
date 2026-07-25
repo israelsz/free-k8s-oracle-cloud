@@ -26,6 +26,10 @@ syncJob:
       ephemeral-storage: 128Mi
   podSecurityContext:
     runAsNonRoot: true
+    # The upstream image does not declare USER even though the job does not
+    # require root. An explicit UID/GID lets kubelet enforce non-root startup.
+    runAsUser: 65534
+    runAsGroup: 65534
     seccompProfile:
       type: RuntimeDefault
   containerSecurityContext:
