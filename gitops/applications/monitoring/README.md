@@ -1,17 +1,20 @@
 # Monitoring
 
-This parent Application groups two independently reconciled components:
+This parent Application groups three independently reconciled components:
 
 - `victoria-metrics-k8s-stack` provides metrics collection and storage,
   VictoriaLogs storage, Grafana, dashboards, and alert evaluation;
 - `victoria-logs-collector` reads Kubernetes container logs from every worker
-  and sends them to VictoriaLogs.
+  and sends them to VictoriaLogs;
+- `retina` adds pod-aware traffic, drop, DNS, and TCP metrics that OKE's
+  VCN-native kubelet endpoint does not provide.
 
 The split is a security boundary. Most monitoring workloads run in the
-restricted `monitoring` namespace. Node exporter and the log collector require
-read-only host mounts, so they run in the dedicated `node-observability`
-namespace. That namespace permits host access, but the containers still drop
-capabilities and do not run as privileged containers.
+restricted `monitoring` namespace. Node exporter, the log collector, and
+Retina require host access, so they run in the dedicated `node-observability`
+namespace. Node exporter and the log collector remain non-privileged. Retina
+is the explicit exception: its init container and eBPF plugins need kernel
+access to observe pod traffic.
 
 VictoriaMetrics and VictoriaLogs each use one `4Gi` claim from the explicit
 `local-boot` StorageClass. These claims are directories on the existing worker

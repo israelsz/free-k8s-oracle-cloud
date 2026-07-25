@@ -26,8 +26,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "-9"
 spec:
   hard:
-    # Two DaemonSets on two workers, with room for a rolling replacement.
-    pods: "6"
-    services: "4"
+    # Three DaemonSets plus Retina's metadata operator, with rollout headroom.
+    pods: "8"
+    services: "5"
     secrets: "10"
-    configmaps: "10"
+    configmaps: "15"

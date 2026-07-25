@@ -1,0 +1,39 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMServiceScrape
+metadata:
+  name: retina
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: retina
+    app.kubernetes.io/part-of: monitoring
+spec:
+  # The scrape object lives with VMAgent, while the privileged node collector
+  # remains isolated in the host-access namespace.
+  namespaceSelector:
+    matchNames:
+      - node-observability
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: retina
+      app.kubernetes.io/instance: retina
+      app.kubernetes.io/component: networking
+  endpoints:
+    - port: retina
+      interval: 30s
+      scrapeTimeout: 10s
+      relabelConfigs:
+        - action: replace
+          sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: instance
+        - action: replace
+          sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: node
+      metricRelabelConfigs:
+        # The bundled dashboards only consume Retina's network telemetry.
+        # Dropping generic Go/process series saves memory and disk.
+        - action: keep
+          sourceLabels:
+            - __name__
+          regex: networkobservability_.*

@@ -34,6 +34,30 @@ syncJob:
         - ALL
     readOnlyRootFilesystem: true
 
+# OKE's VCN-native kubelet publishes node-interface network counters but does
+# not attach namespace or pod labels. Hide only the stock dashboards that
+# require those absent labels, then sync Retina's pinned replacements.
+defaultDashboards:
+  dashboards:
+    namespace-by-pod:
+      enabled: false
+    namespace-by-workload:
+      enabled: false
+    pod-total:
+      enabled: false
+    workload-total:
+      enabled: false
+  sources:
+    retina-clusters:
+      enabled: true
+      url: https://raw.githubusercontent.com/microsoft/retina/v1.2.3/deploy/grafana-dashboards/clusters.json
+    retina-standard-pod-level:
+      enabled: true
+      url: https://raw.githubusercontent.com/microsoft/retina/v1.2.3/deploy/grafana-dashboards/standard-pod-level.json
+    retina-standard-dns:
+      enabled: true
+      url: https://raw.githubusercontent.com/microsoft/retina/v1.2.3/deploy/grafana-dashboards/standard-dns.json
+
 victoria-metrics-operator:
   enabled: true
   crds:

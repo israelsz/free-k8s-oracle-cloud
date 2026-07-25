@@ -20,7 +20,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # VMAgent scrapes both node exporter and the log collector.
+    # VMAgent scrapes node exporter, the log collector, and Retina.
     - from:
         - namespaceSelector:
             matchLabels:
@@ -30,13 +30,17 @@ spec:
           protocol: TCP
         - port: 9429
           protocol: TCP
-    # Node exporter is host-networked, so preserve the VCN-native pod source
-    # range as an explicit equivalent for the namespace-based rule above.
+        - port: 10093
+          protocol: TCP
+    # Node exporter and Retina are host-networked, so preserve the VCN-native
+    # pod source range as an explicit equivalent for the namespace rule above.
     - from:
         - ipBlock:
             cidr: 10.20.2.0/24
       ports:
         - port: 9100
+          protocol: TCP
+        - port: 10093
           protocol: TCP
   egress:
     - to:

@@ -14,7 +14,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: argocd
   sources:
-    # Only the two direct child Application manifests are rendered here.
+    # Only direct child Application manifests are rendered here.
     # Their values and workload manifests remain owned by each child.
     - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
       targetRevision: main

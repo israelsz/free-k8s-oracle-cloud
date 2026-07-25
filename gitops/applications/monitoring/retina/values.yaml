@@ -1,0 +1,63 @@
+# OKE workers are Linux/Arm. Do not render an unused Windows DaemonSet.
+os:
+  linux: true
+  windows: false
+
+namespace: node-observability
+
+image:
+  tag: v1.2.3
+  pullPolicy: IfNotPresent
+
+# The operator supplies the pod metadata cache used by remote-context metrics.
+# Capture jobs remain unused; this deployment exports continuous metrics only.
+operator:
+  enabled: true
+  tag: v1.2.3
+  installCRDs: true
+  enableRetinaEndpoint: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+
+enableTelemetry: false
+logLevel: info
+
+# Remote context attaches both sides of a flow, which is what Retina's pod
+# dashboard uses to rank talkers and drops. This cluster is deliberately small;
+# high aggregation and short VictoriaMetrics retention bound the extra series.
+enablePodLevel: true
+remoteContext: true
+enableAnnotations: false
+dataAggregationLevel: high
+
+# packetparser supplies the pod-level byte, packet, drop, TCP, and latency
+# metrics. The other plugins cover node interfaces and DNS behavior.
+enabledPlugin_linux: '["dropreason","packetforward","linuxutil","dns","packetparser"]'
+
+# The two workers use a modern kernel. A shared ring buffer avoids a
+# per-CPU event buffer while keeping exact byte and packet counters.
+packetParserRingBuffer: enabled
+packetParserRingBufferSize: 8388608
+dataSamplingRate: 1
+
+metricsInterval: 30s
+metricsIntervalDuration: 30s
+
+# Retina runs on the two existing Always Free workers. These limits create no
+# OCI resource and put a ceiling on the node capacity used by observability.
+resources:
+  requests:
+    cpu: 200m
+    memory: 300Mi
+    ephemeral-storage: 64Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi
+    ephemeral-storage: 256Mi

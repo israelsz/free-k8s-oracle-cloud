@@ -21,8 +21,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
   labels:
-    # Node exporter uses host networking and the log collector reads host log
-    # paths. Keep that exception away from ordinary monitoring workloads.
+    # Node exporter uses host networking, the log collector reads host log
+    # paths, and Retina loads eBPF programs. Keep those exceptions away from
+    # ordinary monitoring workloads.
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: v1.35
     pod-security.kubernetes.io/audit: restricted
