@@ -15,13 +15,27 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: openbao-ops
+  name: vault
   namespace: envoy-gateway-system
 spec:
-  secretName: openbao-ops-tls
+  secretName: vault-tls
   issuerRef:
     group: cert-manager.io
     kind: ClusterIssuer
     name: letsencrypt-production
   dnsNames:
-    - openbao.israheck.com
+    - vault.israheck.com
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana
+  namespace: envoy-gateway-system
+spec:
+  secretName: grafana-tls
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-production
+  dnsNames:
+    - grafana.israheck.com

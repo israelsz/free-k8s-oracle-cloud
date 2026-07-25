@@ -1,0 +1,68 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: node-observability
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: node-collectors
+  namespace: node-observability
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # VMAgent scrapes both node exporter and the log collector.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9100
+          protocol: TCP
+        - port: 9429
+          protocol: TCP
+    # Node exporter is host-networked, so preserve the VCN-native pod source
+    # range as an explicit equivalent for the namespace-based rule above.
+    - from:
+        - ipBlock:
+            cidr: 10.20.2.0/24
+      ports:
+        - port: 9100
+          protocol: TCP
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # vlagent watches pods, namespaces, and nodes to enrich each record.
+    - to:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 6443
+          protocol: TCP
+    # Only the private VictoriaLogs store receives collected log records.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 9428
+          protocol: TCP

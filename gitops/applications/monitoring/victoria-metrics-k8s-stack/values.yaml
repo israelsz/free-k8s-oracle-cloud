@@ -1,0 +1,418 @@
+# Argo CD's Application name is different from the short Helm release name.
+# Use the Application identity in generated selectors so Argo's resource
+# tracking cannot break Service-to-pod or scrape selectors.
+argocdReleaseOverride: victoria-metrics-k8s-stack
+
+global:
+  clusterLabel: cluster
+  extraLabels:
+    app.kubernetes.io/part-of: monitoring
+
+# The sync job downloads the chart's pinned dashboard and rule definitions.
+syncJob:
+  enabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+  podSecurityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+
+victoria-metrics-operator:
+  enabled: true
+  crds:
+    plain: true
+    cleanup:
+      # Argo CD does not execute Helm pre-delete hooks. Keep removal explicit
+      # instead of shipping an ineffective cleanup Job with cluster RBAC.
+      enabled: false
+  admissionWebhooks:
+    enabled: true
+    policy: Ignore
+  operator:
+    # This cluster does not install Prometheus Operator objects.
+    disable_prometheus_converter: true
+  # Harden every workload generated from a VictoriaMetrics custom resource.
+  env:
+    - name: VM_ENABLESTRICTSECURITY
+      value: "true"
+  podSecurityContext:
+    enabled: true
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+
+# Single-node metric storage. The 4 GiB PVC is a node-local directory, not a
+# separately provisioned OCI volume and not a hard filesystem quota.
+vmsingle:
+  enabled: true
+  spec:
+    retentionPeriod: 7d
+    replicaCount: 1
+    podMetadata:
+      labels:
+        platform.israheck.com/observability-store: "true"
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                platform.israheck.com/observability-store: "true"
+            topologyKey: kubernetes.io/hostname
+    extraArgs:
+      # Stop ingestion before a full worker boot disk prevents compaction.
+      storage.minFreeDiskSpaceBytes: 10GiB
+      memory.allowedPercent: "40"
+    resources:
+      requests:
+        cpu: 150m
+        memory: 384Mi
+        ephemeral-storage: 64Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+        ephemeral-storage: 256Mi
+    storage:
+      storageClassName: local-boot
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 4Gi
+
+# Single-node log storage. Time retention and the application-level byte limit
+# both apply, preventing logs from consuming the rest of the worker filesystem.
+vlsingle:
+  enabled: true
+  spec:
+    retentionPeriod: 3d
+    replicaCount: 1
+    podMetadata:
+      labels:
+        platform.israheck.com/observability-store: "true"
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                platform.israheck.com/observability-store: "true"
+            topologyKey: kubernetes.io/hostname
+    extraArgs:
+      retention.maxDiskSpaceUsageBytes: 4GiB
+      storage.minFreeDiskSpaceBytes: 10GiB
+      memory.allowedPercent: "40"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+        ephemeral-storage: 64Mi
+      limits:
+        cpu: "1"
+        memory: 768Mi
+        ephemeral-storage: 256Mi
+    storage:
+      storageClassName: local-boot
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 4Gi
+
+# The dedicated victoria-logs-collector chart runs in the host-access
+# namespace. Do not deploy the stack's second collector.
+vlagent:
+  enabled: false
+
+vmagent:
+  enabled: true
+  rbac:
+    # Node exporter and the log collector live in node-observability.
+    namespaced: false
+  spec:
+    replicaCount: 1
+    scrapeInterval: 30s
+    externalLabels:
+      cluster: oracle-free-oke-prod
+    remoteWriteSettings:
+      maxDiskUsagePerURL: 256MiB
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+        ephemeral-storage: 128Mi
+      limits:
+        cpu: 400m
+        memory: 384Mi
+        ephemeral-storage: 512Mi
+    extraArgs:
+      promscrape.streamParse: "true"
+
+vmalert:
+  enabled: true
+  spec:
+    replicaCount: 1
+    evaluationInterval: 30s
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+        ephemeral-storage: 32Mi
+      limits:
+        cpu: 200m
+        memory: 192Mi
+        ephemeral-storage: 128Mi
+
+# Alerts are evaluated and visible in Grafana now. Notification delivery is a
+# later secret-backed configuration; until then Alertmanager uses blackhole.
+alertmanager:
+  enabled: true
+  spec:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+        ephemeral-storage: 32Mi
+      limits:
+        cpu: 200m
+        memory: 192Mi
+        ephemeral-storage: 128Mi
+  config:
+    route:
+      receiver: blackhole
+    receivers:
+      - name: blackhole
+
+# The chart uses one small internal VMAuth pod to give VMAlert a single query
+# endpoint for both VictoriaMetrics and VictoriaLogs.
+internal:
+  vmauth:
+    spec:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+          ephemeral-storage: 32Mi
+        limits:
+          cpu: 200m
+          memory: 192Mi
+          ephemeral-storage: 128Mi
+
+# The built-in Prometheus-compatible data source is enough for metrics.
+# Do not provision the optional VictoriaMetrics plugin data source when its
+# plugin is intentionally not installed.
+defaultDatasources:
+  victoriametrics:
+    datasources:
+      - name: VictoriaMetrics
+        type: prometheus
+        access: proxy
+        uid: VictoriaMetrics
+        isDefault: true
+
+grafana:
+  enabled: true
+  rbac:
+    # Dashboard and datasource sidecars only inspect this namespace.
+    namespaced: true
+  persistence:
+    enabled: false
+  initChownData:
+    enabled: false
+
+  # This plugin provides the LogsQL query builder and live log view.
+  plugins:
+    - victoriametrics-logs-datasource
+
+  admin:
+    existingSecret: grafana-auth
+    userKey: GF_SECURITY_ADMIN_USER
+    passwordKey: GF_SECURITY_ADMIN_PASSWORD
+  envFromSecret: grafana-auth
+
+  service:
+    type: ClusterIP
+    port: 80
+    portName: service
+    appProtocol: https
+
+  # cert-manager renews this Secret; the Deployment reloads it on restart.
+  extraSecretMounts:
+    - name: grafana-server-tls
+      mountPath: /etc/grafana/tls
+      secretName: grafana-server-tls
+      readOnly: true
+      defaultMode: 0440
+
+  grafana.ini:
+    server:
+      protocol: https
+      domain: grafana.israheck.com
+      root_url: https://grafana.israheck.com
+      enforce_domain: true
+      cert_file: /etc/grafana/tls/tls.crt
+      cert_key: /etc/grafana/tls/tls.key
+    security:
+      cookie_secure: true
+      cookie_samesite: lax
+      disable_gravatar: true
+    users:
+      allow_sign_up: false
+      auto_assign_org: true
+      auto_assign_org_role: None
+    auth:
+      oauth_auto_login: true
+      disable_login_form: false
+    auth.generic_oauth:
+      enabled: true
+      name: Google
+      allow_sign_up: true
+      scopes: openid email profile
+      auth_url: https://accounts.google.com/o/oauth2/v2/auth
+      token_url: https://oauth2.googleapis.com/token
+      api_url: https://openidconnect.googleapis.com/v1/userinfo
+      use_pkce: true
+      role_attribute_strict: true
+      allow_assign_grafana_admin: true
+      # A non-matching or unverified identity produces no role. Strict mode
+      # then rejects the login instead of creating a low-privilege account.
+      role_attribute_path: >-
+        email == '$__env{OIDC_ALLOWED_EMAIL}' &&
+        email_verified == `true` && 'GrafanaAdmin'
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+      ephemeral-storage: 512Mi
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+      scheme: HTTPS
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+      scheme: HTTPS
+    initialDelaySeconds: 60
+    timeoutSeconds: 30
+    failureThreshold: 10
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+        ephemeral-storage: 16Mi
+      limits:
+        cpu: 100m
+        memory: 96Mi
+        ephemeral-storage: 64Mi
+    datasources:
+      enabled: true
+      # Avoid weakening Kubernetes API TLS verification for a localhost
+      # reload callback. Datasource changes take effect after a Grafana restart.
+      skipReload: true
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+      # Grafana's file provisioner watches dashboard files itself.
+      skipReload: true
+
+  # VMAgent verifies the same private CA used by Envoy for the public backend.
+  vmScrape:
+    enabled: true
+    spec:
+      endpoints:
+        - port: service
+          scheme: https
+          tlsConfig:
+            serverName: monitoring-grafana.monitoring.svc.cluster.local
+            ca:
+              configMap:
+                name: openbao-internal-ca
+                key: ca.crt
+
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+      ephemeral-storage: 32Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+      ephemeral-storage: 128Mi
+
+# Node exporter needs host networking and host filesystem mounts, so only this
+# subchart is rendered into the dedicated host-access namespace.
+prometheus-node-exporter:
+  enabled: true
+  namespaceOverride: node-observability
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+      ephemeral-storage: 16Mi
+    limits:
+      cpu: 200m
+      memory: 96Mi
+      ephemeral-storage: 64Mi
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  vmScrape:
+    enabled: true
+    spec:
+      namespaceSelector:
+        matchNames:
+          - node-observability
+
+# OKE manages these control-plane components outside worker-visible pods.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+kubeApiServer:
+  enabled: true
+kubelet:
+  enabled: true
+kubeProxy:
+  enabled: true
+coreDns:
+  enabled: true

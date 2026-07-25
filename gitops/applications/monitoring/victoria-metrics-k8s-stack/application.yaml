@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: victoria-metrics-k8s-stack
+  namespace: argocd
+  annotations:
+    # The parent creates namespaces and quotas before this child is evaluated.
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  sources:
+    # All-in-one metrics, logging storage, dashboards, and alerting chart.
+    - repoURL: https://victoriametrics.github.io/helm-charts/
+      chart: victoria-metrics-k8s-stack
+      targetRevision: 0.87.0
+      helm:
+        releaseName: monitoring
+        valueFiles:
+          - $values/gitops/applications/monitoring/victoria-metrics-k8s-stack/values.yaml
+
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      ref: values
+
+    # Grafana's secret delivery, internal certificate, and public route stay
+    # beside the chart they extend.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/monitoring/victoria-metrics-k8s-stack/manifest
+
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 20
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      # The chart creates VictoriaMetrics CRDs and their first CRs together.
+      - SkipDryRunOnMissingResource=true

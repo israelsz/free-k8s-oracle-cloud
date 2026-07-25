@@ -37,6 +37,17 @@ applications/
 ├── local-path-provisioner/
 │   ├── application.yaml
 │   └── values.yaml
+├── monitoring/
+│   ├── application.yaml
+│   ├── manifest/
+│   ├── victoria-logs-collector/
+│   │   ├── application.yaml
+│   │   ├── values.yaml
+│   │   └── manifest/
+│   └── victoria-metrics-k8s-stack/
+│       ├── application.yaml
+│       ├── values.yaml
+│       └── manifest/
 ├── openbao/
 │   ├── application.yaml
 │   ├── values.yaml
@@ -67,6 +78,8 @@ the Application points directly at its `manifest/` directory.
 The App of Apps uses directory recursion with the include pattern
 `*/application.yaml`. It therefore creates the child Applications without
 mistaking `values.yaml` or the child manifests for top-level resources.
+`monitoring/application.yaml` repeats the same pattern within its own folder so
+its two components remain grouped without becoming top-level bootstrap entries.
 
 Dependency order is enforced by explicit Argo CD sync-wave annotations on each
 `application.yaml`, not by directory names.

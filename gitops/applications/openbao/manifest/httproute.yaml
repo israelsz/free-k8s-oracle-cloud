@@ -1,39 +1,4 @@
 apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: argocd
-  namespace: argocd
-  annotations:
-    # ExternalDNS ignores every route without this explicit opt-in.
-    external-dns.alpha.kubernetes.io/expose: public
-    # Cloudflare answers publicly and proxies HTTPS to the OCI origin.
-    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-    # Gateway and certificates are established before application routes.
-    argocd.argoproj.io/sync-wave: "1"
-spec:
-  parentRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: public
-      namespace: envoy-gateway-system
-      sectionName: argocd-https
-  hostnames:
-    - argocd.israheck.com
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        # Port 443 is re-encrypted and verified by argocd-server's
-        # BackendTLSPolicy in the same namespace as this Service.
-        - group: ""
-          kind: Service
-          name: argocd-server
-          port: 443
-          weight: 1
----
-apiVersion: gateway.networking.k8s.io/v1
 kind: BackendTLSPolicy
 metadata:
   name: openbao-ui
@@ -61,7 +26,9 @@ metadata:
   name: openbao
   namespace: openbao
   annotations:
+    # ExternalDNS ignores every route without this explicit opt-in.
     external-dns.alpha.kubernetes.io/expose: public
+    # Cloudflare answers publicly and proxies HTTPS to the OCI origin.
     external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
     argocd.argoproj.io/sync-wave: "2"
 spec:
@@ -70,9 +37,9 @@ spec:
       kind: Gateway
       name: public
       namespace: envoy-gateway-system
-      sectionName: openbao-https
+      sectionName: vault-https
   hostnames:
-    - openbao.israheck.com
+    - vault.israheck.com
   rules:
     - matches:
         - path:

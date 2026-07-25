@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-storage
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
+spec:
+  hard:
+    # Exactly two boot-disk claims: one metrics store and one logs store.
+    persistentvolumeclaims: "2"
+    requests.storage: 8Gi
+    local-boot.storageclass.storage.k8s.io/persistentvolumeclaims: "2"
+    local-boot.storageclass.storage.k8s.io/requests.storage: 8Gi
+    pods: "30"
+    services: "20"
+    secrets: "30"
+    configmaps: "150"
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: node-observability-counts
+  namespace: node-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
+spec:
+  hard:
+    # Two DaemonSets on two workers, with room for a rolling replacement.
+    pods: "6"
+    services: "4"
+    secrets: "10"
+    configmaps: "10"

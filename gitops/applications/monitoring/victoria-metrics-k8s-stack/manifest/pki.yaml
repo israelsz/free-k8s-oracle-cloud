@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-server
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  secretName: grafana-server-tls
+  duration: 2160h
+  renewBefore: 360h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages:
+    - server auth
+    - digital signature
+  dnsNames:
+    - monitoring-grafana
+    - monitoring-grafana.monitoring
+    - monitoring-grafana.monitoring.svc
+    - monitoring-grafana.monitoring.svc.cluster.local
+  issuerRef:
+    name: openbao-ca
+    kind: ClusterIssuer
+    group: cert-manager.io

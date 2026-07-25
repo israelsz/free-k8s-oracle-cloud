@@ -1,0 +1,113 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: internal-monitoring
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-platform-access
+  namespace: monitoring
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # The private API server calls the operator's validating webhook.
+    - from:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 9443
+          protocol: TCP
+    # Envoy re-encrypts public requests to Grafana's HTTPS pod port.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+          podSelector:
+            matchLabels:
+              platform.israheck.com/edge-proxy: public
+      ports:
+        - port: 3000
+          protocol: TCP
+    # The node collectors send logs to the private VLSingle endpoint.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: node-observability
+      ports:
+        - port: 9428
+          protocol: TCP
+  egress:
+    # Cluster DNS.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Controllers, sidecars, and VMAgent watch the private Kubernetes API.
+    - to:
+        - ipBlock:
+            cidr: 10.20.0.0/28
+      ports:
+        - port: 6443
+          protocol: TCP
+    # Kubelet, cAdvisor, kube-proxy, and host-networked node exporter targets.
+    - to:
+        - ipBlock:
+            cidr: 10.20.1.0/24
+      ports:
+        - port: 10249
+          protocol: TCP
+        - port: 10250
+          protocol: TCP
+        - port: 9100
+          protocol: TCP
+    # CoreDNS metrics live in kube-system.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 9153
+          protocol: TCP
+    # Dashboard synchronization, the Grafana plugin, and Google OAuth use HTTPS.
+    # The platform Calico tier still blocks OCI link-local metadata first.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - port: 443
+          protocol: TCP

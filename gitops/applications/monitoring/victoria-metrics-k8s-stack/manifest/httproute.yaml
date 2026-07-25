@@ -1,0 +1,50 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: BackendTLSPolicy
+metadata:
+  name: grafana
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: monitoring-grafana
+      sectionName: service
+  validation:
+    hostname: monitoring-grafana.monitoring.svc.cluster.local
+    caCertificateRefs:
+      - group: ""
+        kind: ConfigMap
+        name: openbao-internal-ca
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+  annotations:
+    # This explicit opt-in is the only reason ExternalDNS publishes the name.
+    external-dns.alpha.kubernetes.io/expose: public
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+      namespace: envoy-gateway-system
+      sectionName: grafana-https
+  hostnames:
+    - grafana.israheck.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: monitoring-grafana
+          port: 80
+          weight: 1

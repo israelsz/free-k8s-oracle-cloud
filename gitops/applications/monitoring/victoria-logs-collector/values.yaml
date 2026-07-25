@@ -1,0 +1,82 @@
+fullnameOverride: victoria-logs-collector
+
+global:
+  extraLabels:
+    app.kubernetes.io/part-of: monitoring
+
+remoteWrite:
+  - url: >-
+      http://vlsingle-monitoring-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:9428
+    # The default is unlimited and could fill a worker boot disk.
+    maxDiskUsagePerURL: 256MiB
+
+collector:
+  # Never ingest the collector's own log stream.
+  excludeFilter: kubernetes.pod_name:=%{HOSTNAME}
+  includePodLabels: true
+  includePodAnnotations: false
+  includeNodeLabels: false
+  includeNodeAnnotations: false
+  extraFields: '{"cluster":"oracle-free-oke-prod","collector":"vlagent"}'
+  # These remove structured fields. They cannot redact a secret embedded in an
+  # application's ordinary text message.
+  ignoreFields:
+    - password
+    - token
+    - authorization
+    - request.payload*
+
+serviceAccount:
+  automount: true
+
+podSecurityContext:
+  enabled: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# Root is needed to read every worker's container logs and write the hostPath
+# checkpoint. The container is still non-privileged and has no Linux capability.
+securityContext:
+  enabled: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  privileged: false
+  readOnlyRootFilesystem: true
+  runAsUser: 0
+  runAsGroup: 0
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+    ephemeral-storage: 32Mi
+  limits:
+    cpu: 200m
+    memory: 192Mi
+    ephemeral-storage: 128Mi
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
+extraArgs:
+  envflag.enable: true
+  envflag.prefix: VL_
+  loggerFormat: json
+  tmpDataPath: /var/lib/vl-collector
+
+# Preserve read offsets and the bounded outage buffer across pod restarts on
+# the same worker. This is part of the existing boot disk, not an OCI volume.
+persistence:
+  volume:
+    hostPath:
+      path: /var/lib/vl-collector
+      type: DirectoryOrCreate
+
+podMonitor:
+  enabled: true
+  vm: true
+  interval: 30s
