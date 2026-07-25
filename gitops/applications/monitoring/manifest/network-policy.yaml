@@ -95,6 +95,14 @@ spec:
           protocol: TCP
         - port: 9100
           protocol: TCP
+    # VMAgent scrapes the VLAagent metrics endpoint in node-observability.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: node-observability
+      ports:
+        - port: 9429
+          protocol: TCP
     # CoreDNS metrics live in kube-system.
     - to:
         - namespaceSelector:

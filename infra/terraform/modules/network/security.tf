@@ -10,6 +10,11 @@ resource "oci_core_network_security_group" "workers" {
   vcn_id         = oci_core_vcn.this.id
   display_name   = "${var.name_prefix}-workers-nsg"
   freeform_tags  = var.freeform_tags
+
+  lifecycle {
+    # OKE's cloud controller adds this provider-owned tag after creation.
+    ignore_changes = [freeform_tags["ManagedBy"]]
+  }
 }
 
 resource "oci_core_network_security_group" "pods" {
@@ -234,6 +239,13 @@ locals {
       peer        = oci_core_network_security_group.workers.id
       peer_type   = "NETWORK_SECURITY_GROUP"
       description = "Worker nodes to VCN-native pods"
+    }
+    pods_to_workers = {
+      nsg_id      = oci_core_network_security_group.pods.id
+      direction   = "EGRESS"
+      peer        = oci_core_network_security_group.workers.id
+      peer_type   = "NETWORK_SECURITY_GROUP"
+      description = "VCN-native pods to worker-node services"
     }
     pods_from_pods = {
       nsg_id      = oci_core_network_security_group.pods.id

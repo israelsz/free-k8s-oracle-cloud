@@ -1,8 +1,3 @@
-# Argo CD's Application name is different from the short Helm release name.
-# Use the Application identity in generated selectors so Argo's resource
-# tracking cannot break Service-to-pod or scrape selectors.
-argocdReleaseOverride: victoria-metrics-k8s-stack
-
 global:
   clusterLabel: cluster
   # OKE uses CRI-O with short-name enforcement. Always specify the registry so
@@ -462,5 +457,11 @@ kubelet:
   enabled: true
 kubeProxy:
   enabled: true
+  # OKE exposes kube-proxy metrics as plain HTTP on the private worker network.
+  vmScrape:
+    spec:
+      endpoints:
+        - port: http-metrics
+          scheme: http
 coreDns:
   enabled: true
