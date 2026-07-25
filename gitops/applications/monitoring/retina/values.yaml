@@ -50,6 +50,13 @@ dataSamplingRate: 1
 metricsInterval: 30s
 metricsIntervalDuration: 30s
 
+# The public Prometheus-format endpoint is 10093. Disable controller-runtime's
+# separate internal metrics listener because OKE already owns host port 18080.
+daemonset:
+  container:
+    retina:
+      metricsBindAddress: "0"
+
 # Retina runs on the two existing Always Free workers. These limits create no
 # OCI resource and put a ceiling on the node capacity used by observability.
 resources:
