@@ -23,8 +23,9 @@ spec:
       # Load top-level Application definitions automatically.
       include: '*/application.yaml'
       # Monitoring is itself a top-level Application and exclusively owns the
-      # child Applications nested below its directory.
-      exclude: 'monitoring/*/application.yaml'
+      # three child Applications listed here. Exact paths avoid Argo CD's glob
+      # matcher also excluding monitoring/application.yaml.
+      exclude: '{monitoring/retina/application.yaml,monitoring/victoria-logs-collector/application.yaml,monitoring/victoria-metrics-k8s-stack/application.yaml}'
 
   # The Kubernetes API address below means "the cluster running Argo CD."
   destination:
