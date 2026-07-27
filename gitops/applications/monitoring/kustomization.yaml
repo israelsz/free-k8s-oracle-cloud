@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# The monitoring parent owns these Argo CD Applications. The root App of Apps
+# owns only monitoring/application.yaml, not these nested children.
+resources:
+  - retina/application.yaml
+  - victoria-logs-collector/application.yaml
+  - victoria-metrics-k8s-stack/application.yaml

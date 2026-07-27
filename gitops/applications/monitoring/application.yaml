@@ -14,14 +14,12 @@ spec:
     server: https://kubernetes.default.svc
     namespace: argocd
   sources:
-    # Only direct child Application manifests are rendered here.
+    # This Kustomization explicitly lists the child Applications owned here.
     # Their values and workload manifests remain owned by each child.
     - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
       targetRevision: main
       path: gitops/applications/monitoring
-      directory:
-        recurse: true
-        include: "*/application.yaml"
+      kustomize: {}
 
     # Namespace labels and shared storage guardrails must exist before either
     # child chart starts creating workloads.
@@ -45,3 +43,5 @@ spec:
       - ServerSideApply=true
       - ApplyOutOfSyncOnly=true
       - PruneLast=true
+      # Prevent nested parents from silently taking the same resource.
+      - FailOnSharedResource=true

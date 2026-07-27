@@ -20,9 +20,11 @@ spec:
     directory:
       # Search each named application folder below the path above.
       recurse: true
-      # Only load Application definitions. This prevents values.yaml and files
-      # under manifest/ from being interpreted as children of this app.
+      # Load top-level Application definitions automatically.
       include: '*/application.yaml'
+      # Monitoring is itself a top-level Application and exclusively owns the
+      # child Applications nested below its directory.
+      exclude: 'monitoring/*/application.yaml'
 
   # The Kubernetes API address below means "the cluster running Argo CD."
   destination:
@@ -50,3 +52,6 @@ spec:
       # Let Kubernetes track field ownership instead of using a large
       # client-side last-applied annotation.
       - ServerSideApply=true
+      # Stop with a clear error instead of taking ownership from another
+      # Application if a catalog entry is ever duplicated.
+      - FailOnSharedResource=true
