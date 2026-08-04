@@ -42,9 +42,11 @@ txtOwnerId: oracle-free-oke-prod
 # records. This value is permanent once ExternalDNS creates its first record.
 txtPrefix: _edns-%{record_type}.
 
-# The Cloudflare token is scoped to exactly one zone. That provider-side
-# boundary avoids committing a personal domain or zone ID to this repository.
-domainFilters: []
+# ExternalDNS can change records only in these two zones. The Cloudflare token
+# has the same limit, so a later token mistake cannot widen this list by itself.
+domainFilters:
+  - israheck.com
+  - labrats.cl
 managedRecordTypes:
   - A
   - AAAA

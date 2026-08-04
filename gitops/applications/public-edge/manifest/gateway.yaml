@@ -68,3 +68,22 @@ spec:
                 operator: In
                 values:
                   - monitoring
+    - name: labrats-https
+      hostname: labrats.cl
+      protocol: HTTPS
+      port: 443
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: labrats-cl-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - labrats

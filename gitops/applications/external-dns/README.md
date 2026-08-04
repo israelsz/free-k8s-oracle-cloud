@@ -1,29 +1,30 @@
 # ExternalDNS
 
-This application installs ExternalDNS 0.21.0 from the official chart and lets
-it manage only records explicitly opted in with:
+ExternalDNS reads approved `HTTPRoute` objects and keeps their Cloudflare DNS
+records in sync. A route must include this annotation before ExternalDNS will
+touch it:
 
 ```yaml
 external-dns.alpha.kubernetes.io/expose: public
 ```
 
-The Cloudflare token is delivered from OpenBao through a namespaced
-`SecretStore`. It is not stored in Git. The token itself is restricted to one
-Cloudflare zone, which is the provider-side boundary; the personal domain and
-zone ID do not need to appear in this repository.
+It can manage records only under authorized domains. The Helm
+values list both zones, and the Cloudflare token has the same limit.
 
-The ExternalDNS token is separate from cert-manager's token. It has the same
-minimal `Zone - Zone - Read` and `Zone - DNS - Edit` permissions for one
-specific zone, so either token can be revoked or rotated without sharing a
-credential between controllers.
+OpenBao holds the token and External Secrets places it in the namespace. The
+token has only these Cloudflare permissions:
 
-`policy=sync` removes records that disappear from desired Kubernetes state, but
-the TXT registry permits deletion only for records carrying this cluster's
-`oracle-free-oke-prod` owner ID. The `_edns-%{record_type}.` prefix prevents
-ownership TXT records from colliding with application records and must not be
-changed after the first record is created.
+- `Zone → Zone → Read`
+- `Zone → DNS → Edit`
 
-The `gateway-httproute` source watches accepted routes and obtains their targets
-from the public Gateway status. Its generated ClusterRole can only read
-Gateways, HTTPRoutes, and Namespaces. Public `HTTPRoute` objects carry both the
-opt-in annotation and Cloudflare's per-route proxy annotation.
+cert-manager uses a different token. If one controller has a problem, we can
+replace its token without stopping the other one.
+
+`policy=sync` removes a DNS record when its approved route leaves Git. The TXT
+registry lets this cluster remove only records with the
+`oracle-free-oke-prod` owner ID. Do not change the TXT owner ID or prefix after
+the first record exists.
+
+The controller watches Gateways, HTTPRoutes, and Namespaces. It gets the public
+IP from the Gateway status, then creates proxied Cloudflare records for routes
+that use the opt-in annotation.
