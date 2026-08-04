@@ -60,3 +60,37 @@ spec:
       ports:
         - port: 8200
           protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: controller-public-https
+  namespace: external-secrets
+spec:
+  # Only the main controller calls external secret providers and generators.
+  # The webhook and certificate controller keep the namespace's default deny.
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: external-secrets
+      app.kubernetes.io/name: external-secrets
+  policyTypes:
+    - Egress
+  egress:
+    # Kubernetes NetworkPolicy cannot select an internet hostname. Permit
+    # public HTTPS for provider APIs while keeping private and link-local
+    # networks outside this rule.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 100.64.0.0/10
+              - 127.0.0.0/8
+              - 169.254.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 224.0.0.0/4
+              - 240.0.0.0/4
+      ports:
+        - port: 443
+          protocol: TCP
