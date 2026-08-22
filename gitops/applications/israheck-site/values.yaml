@@ -1,17 +1,14 @@
 # The first website release changes this to two. Keeping zero replicas here
 # lets the GitOps structure merge before the first image exists in GHCR.
-replicaCount: 0
-
+replicaCount: 2
 image:
   repository: ghcr.io/israelsz/israheck-website
-  tag: site-bootstrap
-  digest: ""
+  tag: site-d60d797
+  digest: "sha256:02d4fe0862bb52b2bf7e740dcaddedba19ee22368665ddd025ed7f135e226dd7"
   pullPolicy: IfNotPresent
-
 service:
   port: 80
   targetPort: 8080
-
 resources:
   requests:
     cpu: 5m
@@ -21,4 +18,3 @@ resources:
     cpu: 100m
     memory: 32Mi
     ephemeral-storage: 16Mi
-
