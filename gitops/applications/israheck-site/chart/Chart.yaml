@@ -1,0 +1,7 @@
+apiVersion: v2
+name: israheck-site
+description: Static personal site served by a small non-root container
+type: application
+version: 0.1.0
+appVersion: "1"
+

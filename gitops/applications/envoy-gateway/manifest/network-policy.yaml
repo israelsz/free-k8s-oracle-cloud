@@ -177,6 +177,18 @@ spec:
       ports:
         - port: 8080
           protocol: TCP
+    # The personal site is another static HTTP service behind the same proxy.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: israheck-site
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: israheck-site
+              app.kubernetes.io/name: israheck-site
+      ports:
+        - port: 8080
+          protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

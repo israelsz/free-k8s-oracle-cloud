@@ -1,0 +1,17 @@
+{{- if gt (int .Values.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: israheck-site
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: israheck-site
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: israheck-site
+      app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+

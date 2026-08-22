@@ -16,9 +16,9 @@ Cloudflare connects to Envoy with HTTPS. Set both Cloudflare zones to **Full
 origin.
 
 The admin apps start a second TLS connection from Envoy to their internal
-Services. The LabRats landing page serves public static files over HTTP inside
-the cluster. Its NetworkPolicy accepts traffic only from the public Envoy pods,
-and the landing pods have no allowed outbound traffic.
+Services. The LabRats landing page and Israheck site serve static files over
+HTTP inside the cluster. Their NetworkPolicies accept traffic only from the
+public Envoy pods, and the site pods have no allowed outbound traffic.
 
 Envoy runs two replicas across the two workers. Its disruption budget keeps one
 proxy running during planned node work.

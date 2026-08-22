@@ -53,3 +53,17 @@ spec:
     name: letsencrypt-production
   dnsNames:
     - labrats.cl
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: israheck-com
+  namespace: envoy-gateway-system
+spec:
+  secretName: israheck-com-tls
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-production
+  dnsNames:
+    - israheck.com
