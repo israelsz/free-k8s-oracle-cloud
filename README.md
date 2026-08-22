@@ -260,6 +260,7 @@ Local PVCs are directories on worker boot volumes. They survive a pod restart on
 - Namespace policies deny traffic by default and allow explicit service paths.
 - Pods use non-root users, read-only root filesystems, dropped capabilities and `RuntimeDefault` seccomp where upstream images permit it.
 - Argo CD, Grafana and OpenBao use Google OIDC with explicit local authorization.
+- Public Git contains no credentials, state, kubeconfig, real OCIDs or backend settings.
 
 ## Repository layout
 
@@ -339,6 +340,7 @@ Before calling the platform complete, test these paths:
 - metrics, logs and Retina network series arrive in Grafana;
 - OCI Cost Analysis and the forecast remain at zero.
 
+
 ## Known limits
 
 - Two workers cannot form a three-member storage quorum.
@@ -347,8 +349,6 @@ Before calling the platform complete, test these paths:
 - OpenBao has one replica and pauses briefly when Kubernetes moves it.
 - Metrics and logs use node-local storage and can disappear with a worker.
 - The cluster has no paid SLA or reserved capacity.
-
-These limits are deliberate and documented. Do not present this topology as a substitute for a supported commercial production platform.
 
 ## Further reading
 
