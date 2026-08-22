@@ -3,8 +3,8 @@
 replicaCount: 2
 image:
   repository: ghcr.io/israelsz/israheck-website
-  tag: site-d60d797
-  digest: "sha256:02d4fe0862bb52b2bf7e740dcaddedba19ee22368665ddd025ed7f135e226dd7"
+  tag: site-0b5c404
+  digest: "sha256:2f93d813efb38c003e237c2ec544a3e761bfba315a23648548224d5174acc1e1"
   pullPolicy: IfNotPresent
 service:
   port: 80
