@@ -17,6 +17,10 @@ spec:
   oidc:
     provider:
       issuer: https://accounts.google.com
+      # Avoid controller-side discovery: the controller intentionally has no
+      # internet egress. Proxy pods use these endpoints during browser login.
+      authorizationEndpoint: https://accounts.google.com/o/oauth2/v2/auth
+      tokenEndpoint: https://oauth2.googleapis.com/token
     clientIDRef:
       name: kaneo-auth
     clientSecret:

@@ -5,6 +5,10 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "10"
+    # External Secrets, Envoy Gateway, and Gateway API all default fields in
+    # admission. Compare server-side so those defaults are not reported as
+    # persistent drift after an otherwise successful sync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   destination:
