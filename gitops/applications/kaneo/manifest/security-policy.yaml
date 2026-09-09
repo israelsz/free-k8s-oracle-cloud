@@ -30,9 +30,10 @@ spec:
     scopes:
       - email
       - profile
-    # Give the ID-token cookie a stable name so the following JWT filter can
-    # validate the Google token from the session created by OIDC.
+    # Stable, app-specific names let JWT validate the ID token and prevent an
+    # older Envoy session from bypassing creation of the new ID-token cookie.
     cookieNames:
+      accessToken: KaneoAccessToken
       idToken: KaneoIdToken
 
   # Google access tokens are opaque, so validate the signed ID token stored by
