@@ -48,6 +48,12 @@ defaultDashboards:
     workload-total:
       enabled: false
   sources:
+    # This is the dashboard shipped by CNPG's official `cluster` chart 0.0.5.
+    # The sync job replaces its Prometheus datasource placeholder with the
+    # configured VictoriaMetrics datasource UID before Grafana loads it.
+    cloudnative-pg:
+      enabled: true
+      url: https://raw.githubusercontent.com/cloudnative-pg/grafana-dashboards/cluster-v0.0.5/charts/cluster/grafana-dashboard.json
     retina-clusters:
       enabled: true
       url: https://raw.githubusercontent.com/microsoft/retina/v1.2.3/deploy/grafana-dashboards/clusters.json

@@ -5,3 +5,4 @@ resources:
   - grafana-oidc-secret.yaml
   - pki.yaml
   - httproute.yaml
+  - cnpg-scrapes.yaml

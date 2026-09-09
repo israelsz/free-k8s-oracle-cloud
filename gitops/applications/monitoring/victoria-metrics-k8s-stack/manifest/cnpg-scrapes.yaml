@@ -1,0 +1,42 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: kaneo-cnpg
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  # Keep the application namespace free of monitoring-controller objects while
+  # selecting only pods belonging to Kaneo's named CNPG database.
+  namespaceSelector:
+    matchNames:
+      - kaneo
+  selector:
+    matchLabels:
+      cnpg.io/cluster: kaneo-db
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMPodScrape
+metadata:
+  name: cnpg-operator
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  # Operator reconciliation and error counters are separate from the database
+  # metrics above, so scrape the controller pod through its named metrics port.
+  namespaceSelector:
+    matchNames:
+      - cnpg-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cloudnative-pg
+      app.kubernetes.io/instance: cnpg
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s

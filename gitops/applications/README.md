@@ -19,6 +19,8 @@ applications/
 ├── cloudflare-dns/
 │   ├── application.yaml
 │   └── manifest/
+├── cloudnative-pg/
+│   └── application.yaml
 ├── external-secrets/
 │   ├── application.yaml
 │   ├── values.yaml
@@ -38,6 +40,9 @@ applications/
 │   ├── application.yaml
 │   ├── values.yaml
 │   ├── chart/
+│   └── manifest/
+├── kaneo/
+│   ├── application.yaml
 │   └── manifest/
 ├── local-path-provisioner/
 │   ├── application.yaml

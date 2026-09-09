@@ -105,6 +105,29 @@ spec:
       ports:
         - port: 9429
           protocol: TCP
+    # CNPG exposes database metrics directly from every PostgreSQL pod.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kaneo
+          podSelector:
+            matchLabels:
+              cnpg.io/cluster: kaneo-db
+      ports:
+        - port: 9187
+          protocol: TCP
+    # Scrape controller-runtime metrics from the CNPG operator as well.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cloudnative-pg
+              app.kubernetes.io/instance: cnpg
+      ports:
+        - port: 8080
+          protocol: TCP
     # CoreDNS metrics live in kube-system.
     - to:
         - namespaceSelector:

@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - cnpg-db.yaml
+  - auth-secret.yaml
+  - security-policy.yaml

@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  source:
+    # Only the operator is installed here. Individual databases remain beside
+    # their applications so ownership is obvious.
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.29.0
+    helm:
+      releaseName: cnpg
+      valuesObject:
+        # A second controller replica would not improve database availability;
+        # CNPG reconciles the database independently after operator restarts.
+        replicaCount: 1
+        monitoring:
+          # Native VMPodScrape objects live with the VictoriaMetrics stack.
+          # Do not create a Prometheus-operator PodMonitor that nothing selects.
+          podMonitorEnabled: false
+        podDisruptionBudget:
+          # A PDB around one replica would block an ordinary node drain.
+          enabled: false
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 15
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true

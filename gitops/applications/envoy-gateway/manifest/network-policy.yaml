@@ -128,6 +128,22 @@ spec:
           protocol: TCP
         - port: 18002
           protocol: TCP
+    # OIDC discovery, token exchange, and Google's rotating JWKS all use public
+    # HTTPS endpoints. NetworkPolicy has no portable FQDN matcher, so allow
+    # public IPv4 on TCP/443 while continuing to block private/link-local space.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 100.64.0.0/10
+              - 127.0.0.0/8
+              - 169.254.0.0/16
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
     # Browser traffic is re-encrypted from Envoy to the Argo CD server.
     - to:
         - namespaceSelector:
@@ -188,6 +204,19 @@ spec:
               app.kubernetes.io/name: israheck-site
       ports:
         - port: 8080
+          protocol: TCP
+    # Kaneo serves its combined frontend and API on one internal HTTP port.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kaneo
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: kaneo
+              app.kubernetes.io/name: kaneo
+              app.kubernetes.io/component: kaneo
+      ports:
+        - port: 5173
           protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1

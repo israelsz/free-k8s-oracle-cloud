@@ -1,0 +1,42 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: kaneo-db
+  namespace: kaneo
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    # Losing this object also removes CNPG's database services and pods. Make
+    # database deletion an explicit operation instead of an automatic prune.
+    argocd.argoproj.io/sync-options: Prune=confirm,Delete=false
+spec:
+  # One instance keeps resource use low. This is not a highly available
+  # database; losing the selected worker can lose the local data.
+  instances: 1
+  enableSuperuserAccess: false
+
+  # Omitting an owner Secret lets CNPG generate `kaneo-db-app`, including the
+  # `uri` key consumed by Kaneo's official chart.
+  bootstrap:
+    initdb:
+      database: kaneo
+      owner: kaneo
+
+  storage:
+    # Pin the claim request to 2 GiB on the existing boot-disk provisioner.
+    # local-boot does not enforce this value as a filesystem quota.
+    storageClass: local-boot
+    size: 2Gi
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  monitoring:
+    # CNPG automatically exposes PostgreSQL and instance metrics on port 9187.
+    # Keep its built-in SQL metric set enabled; VictoriaMetrics selects this
+    # cluster through the VMPodScrape owned by the monitoring stack.
+    disableDefaultQueries: false

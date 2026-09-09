@@ -1,0 +1,129 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kaneo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kaneo
+  sources:
+    # Deploy the application from Kaneo's published OCI chart; this repository
+    # keeps only the values that differ from upstream defaults.
+    - repoURL: ghcr.io/usekaneo/charts
+      chart: kaneo
+      targetRevision: 2.23.2
+      helm:
+        releaseName: kaneo
+        valuesObject:
+          fullnameOverride: kaneo
+          replicaCount: 1
+          postgresql:
+            # CNPG owns PostgreSQL, so the database bundled with Kaneo's chart
+            # must stay disabled.
+            enabled: false
+          kaneo:
+            env:
+              # Better Auth validates browser origins and builds the Google
+              # callback from this public URL.
+              clientUrl: https://kaneo.labrats.cl
+              existingSecret:
+                enabled: true
+                name: kaneo-auth
+                key: auth-secret
+              # Do not let Kaneo create password-based accounts. Google remains
+              # enabled below only so Kaneo can create its own application
+              # session after Envoy has authenticated and authorized the user.
+              disablePasswordRegistration: true
+              # Envoy rejects every Google identity except the exact email in
+              # security-policy.yaml, so leaving SSO registration open here is
+              # safe and avoids a one-time bootstrap toggle.
+              disableRegistration: false
+              database:
+                external:
+                  enabled: true
+                  # CNPG generates this Secret and keeps a ready-to-use `uri`
+                  # key for the unprivileged application database owner.
+                  existingSecret:
+                    enabled: true
+                    name: kaneo-db-app
+                    passwordKey: uri
+            # The chart has no dedicated Google keys, so use standard
+            # Kubernetes EnvVar references without putting credentials in Git.
+            extraEnv:
+              # Remove Kaneo's anonymous guest path. Envoy protects the whole
+              # HTTPRoute, and Kaneo still requires its own Google-backed
+              # session because it cannot consume a proxy identity header.
+              - name: DISABLE_GUEST_ACCESS
+                value: "true"
+              - name: GOOGLE_CLIENT_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: kaneo-auth
+                    key: google-client-id
+              - name: GOOGLE_CLIENT_SECRET
+                valueFrom:
+                  secretKeyRef:
+                    name: kaneo-auth
+                    key: google-client-secret
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+          gateway:
+            enabled: true
+            annotations:
+              # Create the protected route only after its Secret and
+              # SecurityPolicy objects exist in earlier sync waves.
+              argocd.argoproj.io/sync-wave: "2"
+              # ExternalDNS creates the Cloudflare record only for routes that
+              # explicitly opt in to public exposure.
+              external-dns.alpha.kubernetes.io/expose: public
+              external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+            parentRefs:
+              - name: public
+                namespace: envoy-gateway-system
+                sectionName: kaneo-https
+            hostnames:
+              - kaneo.labrats.cl
+            rules:
+              - matches:
+                  - path:
+                      type: PathPrefix
+                      value: /
+                backendRefs:
+                  - service: kaneo
+                    port: 5173
+    # CNPG and External Secrets resources are small local additions that the
+    # upstream Kaneo chart intentionally does not own.
+    - repoURL: https://github.com/israelsz/free-k8s-oracle-cloud.git
+      targetRevision: main
+      path: gitops/applications/kaneo/manifest
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        # trust-manager copies the OpenBao CA only into opted-in namespaces.
+        openbao-trust: enabled
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 20
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+      - PruneLast=true
+      - FailOnSharedResource=true

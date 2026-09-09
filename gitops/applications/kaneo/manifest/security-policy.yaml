@@ -1,0 +1,60 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: kaneo-google-oidc
+  namespace: kaneo
+  annotations:
+    # Install the policy object before the chart exposes its wave-2 HTTPRoute.
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: kaneo
+
+  # Envoy owns the public login flow. Requests without a valid session are sent
+  # to Google before they can reach either Kaneo's frontend or API.
+  oidc:
+    provider:
+      issuer: https://accounts.google.com
+    clientIDRef:
+      name: kaneo-auth
+    clientSecret:
+      name: kaneo-auth
+    redirectURL: https://kaneo.labrats.cl/oauth2/callback
+    logoutPath: /oauth2/logout
+    scopes:
+      - email
+      - profile
+    # OIDC runs before JWT in Envoy's filter chain. It decrypts its session
+    # cookie and supplies the signed ID token to the validator through this
+    # internal request header; the browser cookie stays encrypted.
+    forwardIDToken:
+      header: x-kaneo-google-id-token
+
+  # Google access tokens are opaque, so validate the signed ID token supplied
+  # by the OIDC filter using Google's published keys.
+  jwt:
+    providers:
+      - name: google
+        issuer: https://accounts.google.com
+        remoteJWKS:
+          uri: https://www.googleapis.com/oauth2/v3/certs
+        extractFrom:
+          headers:
+            - name: x-kaneo-google-id-token
+
+  # Deny is the default. The only allow rule requires an exact match on the
+  # email claim in a cryptographically verified Google ID token.
+  authorization:
+    defaultAction: Deny
+    rules:
+      - name: allow-iariaspanez
+        action: Allow
+        principal:
+          jwt:
+            provider: google
+            claims:
+              - name: email
+                values:
+                  - iariaspanez@gmail.com
