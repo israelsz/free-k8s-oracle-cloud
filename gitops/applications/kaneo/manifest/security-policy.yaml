@@ -30,14 +30,13 @@ spec:
     scopes:
       - email
       - profile
-    # OIDC runs before JWT in Envoy's filter chain. It decrypts its session
-    # cookie and supplies the signed ID token to the validator through this
-    # internal request header; the browser cookie stays encrypted.
-    forwardIDToken:
-      header: x-kaneo-google-id-token
+    # Give the ID-token cookie a stable name so the following JWT filter can
+    # validate the Google token from the session created by OIDC.
+    cookieNames:
+      idToken: KaneoIdToken
 
-  # Google access tokens are opaque, so validate the signed ID token supplied
-  # by the OIDC filter using Google's published keys.
+  # Google access tokens are opaque, so validate the signed ID token stored by
+  # the preceding OIDC filter using Google's published keys.
   jwt:
     providers:
       - name: google
@@ -45,8 +44,8 @@ spec:
         remoteJWKS:
           uri: https://www.googleapis.com/oauth2/v3/certs
         extractFrom:
-          headers:
-            - name: x-kaneo-google-id-token
+          cookies:
+            - KaneoIdToken
 
   # Deny is the default. The only allow rule requires an exact match on the
   # email claim in a cryptographically verified Google ID token.
