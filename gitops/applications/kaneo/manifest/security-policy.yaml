@@ -48,17 +48,18 @@ spec:
           cookies:
             - KaneoIdToken
 
-  # Deny is the default. The only allow rule requires an exact match on the
-  # email claim in a cryptographically verified Google ID token.
+  # Deny is the default. Google `sub` values are stable account identifiers,
+  # so the allowlist does not expose users' email addresses in Git.
   authorization:
     defaultAction: Deny
     rules:
-      - name: allow-iariaspanez
+      - name: allow-kaneo-users
         action: Allow
         principal:
           jwt:
             provider: google
             claims:
-              - name: email
+              - name: sub
                 values:
-                  - iariaspanez@gmail.com
+                  - "108921963364692021455"
+                  - "112245730480385023329"
