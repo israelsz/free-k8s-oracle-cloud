@@ -5,3 +5,4 @@ resources:
   - cnpg-db.yaml
   - auth-secret.yaml
   - security-policy.yaml
+  - mcp-route.yaml

@@ -42,9 +42,9 @@ spec:
               # enabled below only so Kaneo can create its own application
               # session after Envoy has authenticated and authorized the user.
               disablePasswordRegistration: true
-              # Envoy rejects every Google identity except the exact email in
-              # security-policy.yaml, so leaving SSO registration open here is
-              # safe and avoids a one-time bootstrap toggle.
+              # SSO registration remains behind Envoy's Google-sub allowlist
+              # in security-policy.yaml. The separate MCP route does not expose
+              # browser sign-in, registration or consent endpoints.
               disableRegistration: false
               database:
                 external:
@@ -58,7 +58,7 @@ spec:
             # The chart has no dedicated Google keys, so use standard
             # Kubernetes EnvVar references without putting credentials in Git.
             extraEnv:
-              # Remove Kaneo's anonymous guest path. Envoy protects the whole
+              # Remove Kaneo's anonymous guest path. Envoy protects the browser
               # HTTPRoute, and Kaneo still requires its own Google-backed
               # session because it cannot consume a proxy identity header.
               - name: DISABLE_GUEST_ACCESS
