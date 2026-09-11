@@ -19,7 +19,7 @@ spec:
     # keeps only the values that differ from upstream defaults.
     - repoURL: ghcr.io/usekaneo/charts
       chart: kaneo
-      targetRevision: 2.23.2
+      targetRevision: 2.24.0
       helm:
         releaseName: kaneo
         valuesObject:
